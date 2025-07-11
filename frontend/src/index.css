@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand Colors */
+  --primary-color: #006D77;     /* Teal */
+  --secondary-color: #E5F6F8;   /* Light Teal */
+  --accent-color: #83C5BE;      /* Soft Teal */
+  --text-color: #2C3E50;        /* Dark Blue Gray */
+  --background-color: #FFFFFF;  /* White */
+  --error-color: #E63946;      /* Red */
+  --success-color: #2ECC71;    /* Green */
+
+  /* UI Specific */
+  --button-bg: var(--primary-color);
+  --button-text: #ffffff;
+  --card-bg: #FFFFFF;          /* White */
+  --border-color: #E2E8F0;     /* Light Border */
+  --hover-color: #005F68;      /* Darker Teal */
+
+  /* Additional Colors */
+  --muted-text: #64748B;       /* Slate Gray */
+  --light-accent: #EDF6F9;     /* Very Light Teal */
+  --surface-color: #F8FAFC;    /* Surface Gray */
+}

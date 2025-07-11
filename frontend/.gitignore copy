@@ -1,0 +1,38 @@
+# === Node.js ===
+node_modules/
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+dist/
+build/
+
+# === React (frontend) ===
+*.log
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+/build
+/public/static
+
+# === System Files ===
+.DS_Store
+Thumbs.db
+
+# === IDEs and Editors ===
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# === Logs ===
+logs/
+*.log
+
+# === Optional for Git ===
+.git/
