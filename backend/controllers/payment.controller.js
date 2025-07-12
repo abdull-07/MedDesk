@@ -1,8 +1,8 @@
-const PaymentService = require('../services/payment.service');
-const AppointmentService = require('../services/appointment.service');
-const NotificationService = require('../services/notification.service');
+import PaymentService from '../services/payment.service.js';
+import AppointmentService from '../services/appointment.service.js';
+import NotificationService from '../services/notification.service.js';
 
-exports.createJazzCashPayment = async (req, res) => {
+export const createJazzCashPayment = async (req, res) => {
   try {
     const { appointmentId, amount, customerEmail, customerPhone, description } = req.body;
 
@@ -37,13 +37,13 @@ exports.createJazzCashPayment = async (req, res) => {
   }
 };
 
-exports.handlePaymentCallback = async (req, res) => {
+export const handlePaymentCallback = async (req, res) => {
   try {
     const paymentResponse = req.body;
     const verificationResult = await PaymentService.verifyPayment(paymentResponse);
 
     if (verificationResult.success) {
-      // Update appointment payment status
+      // Update appointment status
       const appointmentId = paymentResponse.pp_BillReference;
       await AppointmentService.updatePaymentStatus(appointmentId, 'paid');
 

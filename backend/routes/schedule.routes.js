@@ -1,8 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const { authMiddleware } = require('../middleware/auth.middleware');
-const { roleCheck } = require('../middleware/role.middleware');
-const {
+import express from 'express';
+import { authenticateToken } from '../middleware/auth.middleware.js';
+import { roleCheck } from '../middleware/role.middleware.js';
+import {
   getSchedule,
   updateSchedule,
   addBreakTime,
@@ -10,10 +9,12 @@ const {
   addDateOverride,
   removeDateOverride,
   getAvailability
-} = require('../controllers/schedule.controller');
+} from '../controllers/schedule.controller.js';
+
+const router = express.Router();
 
 // All routes require doctor authentication
-router.use(authMiddleware);
+router.use(authenticateToken);
 router.use(roleCheck(['doctor']));
 
 // Get doctor's schedule
@@ -33,4 +34,4 @@ router.delete('/schedule/overrides/:id', removeDateOverride);
 // Get availability for a date range
 router.get('/availability', getAvailability);
 
-module.exports = router; 
+export default router; 

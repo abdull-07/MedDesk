@@ -1,7 +1,7 @@
-const Schedule = require('../models/schedule.model');
+import Schedule from '../models/schedule.model.js';
 
 // Get doctor's schedule
-const getSchedule = async (req, res) => {
+export const getSchedule = async (req, res) => {
   try {
     let schedule = await Schedule.findOne({ doctor: req.user.id });
 
@@ -33,7 +33,7 @@ const getSchedule = async (req, res) => {
 };
 
 // Update recurring schedule
-const updateSchedule = async (req, res) => {
+export const updateSchedule = async (req, res) => {
   try {
     const {
       recurringSchedule,
@@ -73,7 +73,7 @@ const updateSchedule = async (req, res) => {
 };
 
 // Add break time
-const addBreakTime = async (req, res) => {
+export const addBreakTime = async (req, res) => {
   try {
     const { startTime, endTime, dayOfWeek } = req.body;
 
@@ -107,7 +107,7 @@ const addBreakTime = async (req, res) => {
 };
 
 // Remove break time
-const removeBreakTime = async (req, res) => {
+export const removeBreakTime = async (req, res) => {
   try {
     const breakTimeId = req.params.id;
     
@@ -134,7 +134,7 @@ const removeBreakTime = async (req, res) => {
 };
 
 // Add date override (holiday, time off)
-const addDateOverride = async (req, res) => {
+export const addDateOverride = async (req, res) => {
   try {
     const { date, isAvailable, startTime, endTime, reason } = req.body;
 
@@ -175,7 +175,7 @@ const addDateOverride = async (req, res) => {
 };
 
 // Remove date override
-const removeDateOverride = async (req, res) => {
+export const removeDateOverride = async (req, res) => {
   try {
     const overrideId = req.params.id;
     
@@ -202,7 +202,7 @@ const removeDateOverride = async (req, res) => {
 };
 
 // Get availability for a date range
-const getAvailability = async (req, res) => {
+export const getAvailability = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
@@ -248,14 +248,15 @@ const getAvailability = async (req, res) => {
       );
 
       if (regularSchedule) {
-        // Get breaks for this day
-        const dayBreaks = schedule.breakTimes.filter(b => b.dayOfWeek === dayOfWeek);
+        // Get break times for this day
+        const breaks = schedule.breakTimes.filter(b => b.dayOfWeek === dayOfWeek);
 
+        // Add regular schedule with breaks
         availability.push({
           date: new Date(date),
           startTime: regularSchedule.startTime,
           endTime: regularSchedule.endTime,
-          breaks: dayBreaks,
+          breaks,
           type: 'regular'
         });
       }
@@ -263,24 +264,11 @@ const getAvailability = async (req, res) => {
 
     res.json({
       availability,
-      schedule: {
-        slotDuration: schedule.slotDuration,
-        bufferTime: schedule.bufferTime
-      }
+      slotDuration: schedule.slotDuration,
+      bufferTime: schedule.bufferTime
     });
-
   } catch (error) {
     console.error('Get availability error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
-};
-
-module.exports = {
-  getSchedule,
-  updateSchedule,
-  addBreakTime,
-  removeBreakTime,
-  addDateOverride,
-  removeDateOverride,
-  getAvailability
 }; 

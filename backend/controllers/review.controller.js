@@ -1,7 +1,7 @@
-const ReviewService = require('../services/review.service');
+import ReviewService from '../services/review.service.js';
 
 // Create a new review
-const createReview = async (req, res) => {
+export const createReview = async (req, res) => {
   try {
     const {
       doctorId,
@@ -47,7 +47,7 @@ const createReview = async (req, res) => {
 };
 
 // Get doctor's reviews
-const getDoctorReviews = async (req, res) => {
+export const getDoctorReviews = async (req, res) => {
   try {
     const { page, limit, status } = req.query;
     const reviews = await ReviewService.getDoctorReviews(req.params.doctorId, {
@@ -64,7 +64,7 @@ const getDoctorReviews = async (req, res) => {
 };
 
 // Get patient's reviews
-const getPatientReviews = async (req, res) => {
+export const getPatientReviews = async (req, res) => {
   try {
     const { page, limit } = req.query;
     const reviews = await ReviewService.getPatientReviews(req.user.id, {
@@ -80,7 +80,7 @@ const getPatientReviews = async (req, res) => {
 };
 
 // Get pending reviews (admin only)
-const getPendingReviews = async (req, res) => {
+export const getPendingReviews = async (req, res) => {
   try {
     const { page, limit } = req.query;
     const reviews = await ReviewService.getPendingReviews({
@@ -96,7 +96,7 @@ const getPendingReviews = async (req, res) => {
 };
 
 // Moderate review (admin only)
-const moderateReview = async (req, res) => {
+export const moderateReview = async (req, res) => {
   try {
     const { status, reason } = req.body;
 
@@ -132,7 +132,7 @@ const moderateReview = async (req, res) => {
 };
 
 // Update review
-const updateReview = async (req, res) => {
+export const updateReview = async (req, res) => {
   try {
     const {
       rating,
@@ -173,7 +173,7 @@ const updateReview = async (req, res) => {
 };
 
 // Delete review
-const deleteReview = async (req, res) => {
+export const deleteReview = async (req, res) => {
   try {
     await ReviewService.deleteReview(req.params.reviewId, req.user.id);
 
@@ -187,14 +187,4 @@ const deleteReview = async (req, res) => {
     }
     res.status(500).json({ message: 'Internal server error' });
   }
-};
-
-module.exports = {
-  createReview,
-  getDoctorReviews,
-  getPatientReviews,
-  getPendingReviews,
-  moderateReview,
-  updateReview,
-  deleteReview
 }; 

@@ -1,18 +1,19 @@
-const express = require('express');
-const router = express.Router();
-const { authMiddleware } = require('../middleware/auth.middleware');
-const { roleCheck } = require('../middleware/role.middleware');
-const {
+import express from 'express';
+import { authenticateToken } from '../middleware/auth.middleware.js';
+import { roleCheck } from '../middleware/role.middleware.js';
+import {
   getPendingDoctors,
   getDoctorDetails,
   verifyDoctor,
   rejectDoctor,
   getAllDoctors,
   getDoctorStats
-} = require('../controllers/admin.controller');
+} from '../controllers/admin.controller.js';
+
+const router = express.Router();
 
 // All routes require admin authentication
-router.use(authMiddleware);
+router.use(authenticateToken);
 router.use(roleCheck(['admin']));
 
 // Get all pending doctor verifications
@@ -33,4 +34,4 @@ router.post('/doctors/:id/verify', verifyDoctor);
 // Reject doctor verification
 router.post('/doctors/:id/reject', rejectDoctor);
 
-module.exports = router; 
+export default router; 

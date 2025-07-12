@@ -1,7 +1,7 @@
-const DoctorService = require('../services/doctor.service');
+import DoctorService from '../services/doctor.service.js';
 
 // Search doctors with filters
-const searchDoctors = async (req, res) => {
+export const searchDoctors = async (req, res) => {
   try {
     const {
       search,
@@ -52,7 +52,7 @@ const searchDoctors = async (req, res) => {
 };
 
 // Get list of specializations
-const getSpecializations = async (req, res) => {
+export const getSpecializations = async (req, res) => {
   try {
     const specializations = await DoctorService.getSpecializations();
     res.json(specializations);
@@ -63,7 +63,7 @@ const getSpecializations = async (req, res) => {
 };
 
 // Get list of languages
-const getLanguages = async (req, res) => {
+export const getLanguages = async (req, res) => {
   try {
     const languages = await DoctorService.getLanguages();
     res.json(languages);
@@ -74,7 +74,7 @@ const getLanguages = async (req, res) => {
 };
 
 // Get list of cities
-const getCities = async (req, res) => {
+export const getCities = async (req, res) => {
   try {
     const cities = await DoctorService.getCities();
     res.json(cities);
@@ -82,11 +82,4 @@ const getCities = async (req, res) => {
     console.error('Get cities error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
-};
-
-module.exports = {
-  searchDoctors,
-  getSpecializations,
-  getLanguages,
-  getCities
 }; 

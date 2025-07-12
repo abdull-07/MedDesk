@@ -1,18 +1,18 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const cron = require('node-cron');
-const authRoutes = require('./routes/auth.routes');
-const appointmentRoutes = require('./routes/appointment.routes');
-const adminRoutes = require('./routes/admin.routes');
-const bookingRoutes = require('./routes/booking.routes');
-const scheduleRoutes = require('./routes/schedule.routes');
-const notificationRoutes = require('./routes/notification.routes');
-const doctorRoutes = require('./routes/doctor.routes');
-const reviewRoutes = require('./routes/review.routes');
-const paymentRoutes = require('./routes/payment.routes');
-const ReminderService = require('./services/reminder.service');
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import mongoose from 'mongoose';
+import nodeCron from 'node-cron';
+import authRoutes from './routes/auth.routes.js';
+import appointmentRoutes from './routes/appointment.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import bookingRoutes from './routes/booking.routes.js';
+import scheduleRoutes from './routes/schedule.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import doctorRoutes from './routes/doctor.routes.js';
+import reviewRoutes from './routes/review.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
+import ReminderService from './services/reminder.service.js';
 
 const app = express();
 
@@ -80,13 +80,13 @@ const connectDB = async () => {
 // Schedule cron jobs for reminders
 const scheduleCronJobs = () => {
   // Daily reminders at 9 AM
-  cron.schedule('0 9 * * *', () => {
+  nodeCron.schedule('0 9 * * *', () => {
     console.log('Running daily appointment reminders...');
     ReminderService.sendDailyReminders();
   });
 
   // Hourly reminders
-  cron.schedule('0 * * * *', () => {
+  nodeCron.schedule('0 * * * *', () => {
     console.log('Running hourly appointment reminders...');
     ReminderService.sendHourlyReminders();
   });

@@ -1,7 +1,7 @@
-const NotificationService = require('../services/notification.service');
+import NotificationService from '../services/notification.service.js';
 
 // Get user's notifications
-const getUserNotifications = async (req, res) => {
+export const getUserNotifications = async (req, res) => {
   try {
     const { page, limit, unreadOnly } = req.query;
     const result = await NotificationService.getUserNotifications(req.user.id, {
@@ -18,7 +18,7 @@ const getUserNotifications = async (req, res) => {
 };
 
 // Mark notification as read
-const markAsRead = async (req, res) => {
+export const markAsRead = async (req, res) => {
   try {
     const notification = await NotificationService.markAsRead(
       req.params.id,
@@ -39,7 +39,7 @@ const markAsRead = async (req, res) => {
 };
 
 // Mark all notifications as read
-const markAllAsRead = async (req, res) => {
+export const markAllAsRead = async (req, res) => {
   try {
     const count = await NotificationService.markAllAsRead(req.user.id);
 
@@ -53,7 +53,7 @@ const markAllAsRead = async (req, res) => {
 };
 
 // Delete notification
-const deleteNotification = async (req, res) => {
+export const deleteNotification = async (req, res) => {
   try {
     await NotificationService.deleteNotification(
       req.params.id,
@@ -70,11 +70,4 @@ const deleteNotification = async (req, res) => {
     }
     res.status(500).json({ message: 'Internal server error' });
   }
-};
-
-module.exports = {
-  getUserNotifications,
-  markAsRead,
-  markAllAsRead,
-  deleteNotification
 }; 

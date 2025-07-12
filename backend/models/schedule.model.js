@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 // Schema for recurring schedule rules
 const recurringScheduleSchema = new mongoose.Schema({
@@ -171,4 +171,5 @@ scheduleSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Schedule', scheduleSchema); 
+const Schedule = mongoose.model('Schedule', scheduleSchema);
+export default Schedule; 

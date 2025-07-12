@@ -1,9 +1,9 @@
-const User = require('../models/user.model');
-const Appointment = require('../models/appointment.model');
-const availabilityService = require('../services/availability.service');
+import User from '../models/user.model.js';
+import Appointment from '../models/appointment.model.js';
+import availabilityService from '../services/availability.service.js';
 
 // Search doctors with filters
-const searchDoctors = async (req, res) => {
+export const searchDoctors = async (req, res) => {
   try {
     const {
       specialization,
@@ -68,7 +68,7 @@ const searchDoctors = async (req, res) => {
 };
 
 // Get doctor's availability
-const getDoctorAvailability = async (req, res) => {
+export const getDoctorAvailability = async (req, res) => {
   try {
     const { id } = req.params;
     const { date } = req.query;
@@ -107,7 +107,7 @@ const getDoctorAvailability = async (req, res) => {
 };
 
 // Get next available slot
-const getNextAvailable = async (req, res) => {
+export const getNextAvailable = async (req, res) => {
   try {
     const { id } = req.params;
     const { fromDate } = req.query;
@@ -148,7 +148,7 @@ const getNextAvailable = async (req, res) => {
 };
 
 // Initiate booking (temporary hold)
-const initiateBooking = async (req, res) => {
+export const initiateBooking = async (req, res) => {
   try {
     const { doctorId, startTime, endTime, type, reason } = req.body;
 
@@ -219,7 +219,7 @@ const initiateBooking = async (req, res) => {
 };
 
 // Confirm booking
-const confirmBooking = async (req, res) => {
+export const confirmBooking = async (req, res) => {
   try {
     const { appointmentId, paymentDetails } = req.body;
 
@@ -249,9 +249,6 @@ const confirmBooking = async (req, res) => {
     );
 
     if (!isAvailable) {
-      // Delete the pending appointment
-      await Appointment.deleteOne({ _id: appointmentId });
-      
       return res.status(409).json({
         message: 'This time slot is no longer available'
       });
@@ -264,7 +261,7 @@ const confirmBooking = async (req, res) => {
     await appointment.save();
 
     res.json({
-      message: 'Appointment confirmed successfully',
+      message: 'Booking confirmed successfully',
       appointment
     });
 
@@ -275,26 +272,26 @@ const confirmBooking = async (req, res) => {
 };
 
 // Reschedule appointment
-const rescheduleAppointment = async (req, res) => {
+export const rescheduleAppointment = async (req, res) => {
   try {
+    const { startTime, endTime } = req.body;
     const { id } = req.params;
-    const { startTime, endTime, reason } = req.body;
 
-    if (!startTime || !endTime || !reason) {
+    if (!startTime || !endTime) {
       return res.status(400).json({
-        message: 'Please provide new time slot and reason'
+        message: 'New start time and end time are required'
       });
     }
 
     const appointment = await Appointment.findOne({
       _id: id,
       patient: req.user.id,
-      status: 'scheduled'
+      status: { $in: ['scheduled', 'pending'] }
     });
 
     if (!appointment) {
       return res.status(404).json({
-        message: 'Appointment not found'
+        message: 'Active appointment not found'
       });
     }
 
@@ -302,20 +299,19 @@ const rescheduleAppointment = async (req, res) => {
     const isAvailable = await availabilityService.isSlotAvailable(
       appointment.doctor,
       new Date(startTime),
-      new Date(endTime)
+      new Date(endTime),
+      id // Exclude current appointment from conflict check
     );
 
     if (!isAvailable) {
       return res.status(409).json({
-        message: 'New time slot is not available'
+        message: 'The requested time slot is not available'
       });
     }
 
-    // Update appointment
+    // Update appointment times
     appointment.startTime = new Date(startTime);
     appointment.endTime = new Date(endTime);
-    appointment.notes = `Rescheduled: ${reason}`;
-    
     await appointment.save();
 
     res.json({
@@ -327,13 +323,4 @@ const rescheduleAppointment = async (req, res) => {
     console.error('Reschedule appointment error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
-};
-
-module.exports = {
-  searchDoctors,
-  getDoctorAvailability,
-  getNextAvailable,
-  initiateBooking,
-  confirmBooking,
-  rescheduleAppointment
 }; 

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const paymentSchema = new mongoose.Schema({
   appointment: {
@@ -55,4 +55,5 @@ paymentSchema.index({ transactionId: 1 });
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ createdAt: -1 });
 
-module.exports = mongoose.model('Payment', paymentSchema); 
+const Payment = mongoose.model('Payment', paymentSchema);
+export default Payment; 

@@ -1,4 +1,4 @@
-const roleCheck = (allowedRoles) => {
+export const roleCheck = (allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
@@ -10,6 +10,4 @@ const roleCheck = (allowedRoles) => {
 
     next();
   };
-};
-
-module.exports = { roleCheck }; 
+}; 

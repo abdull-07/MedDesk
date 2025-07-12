@@ -1,5 +1,5 @@
-const Appointment = require('../models/appointment.model');
-const NotificationService = require('./notification.service');
+import Appointment from '../models/appointment.model.js';
+import NotificationService from './notification.service.js';
 
 class AppointmentService {
   async getAppointmentById(appointmentId) {
@@ -139,4 +139,5 @@ class AppointmentService {
   }
 }
 
-module.exports = new AppointmentService(); 
+const appointmentService = new AppointmentService();
+export default appointmentService; 

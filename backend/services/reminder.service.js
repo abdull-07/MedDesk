@@ -1,6 +1,6 @@
-const Appointment = require('../models/appointment.model');
-const User = require('../models/user.model');
-const NotificationService = require('./notification.service');
+import Appointment from '../models/appointment.model.js';
+import User from '../models/user.model.js';
+import NotificationService from './notification.service.js';
 
 class ReminderService {
   // Send reminders for appointments in the next 24 hours
@@ -124,4 +124,4 @@ class ReminderService {
   }
 }
 
-module.exports = ReminderService; 
+export default ReminderService; 

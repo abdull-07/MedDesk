@@ -1,28 +1,28 @@
-const express = require('express');
-const router = express.Router();
-const { 
+import express from 'express';
+import { 
   adminLogin, 
-  registerDoctor,
+  registerDoctor, 
+  registerPatient, 
   login, 
-  getProfile 
-} = require('../controllers/auth.controller');
-const { authMiddleware } = require('../middleware/auth.middleware');
+  getProfile,
+  updateProfile 
+} from '../controllers/auth.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+
+const router = express.Router();
 
 // Admin routes
 router.post('/admin/login', adminLogin);
 
 // Doctor routes
-router.post('/auth/doctor/register', registerDoctor);
-router.post('/auth/doctor/login', login);
-router.get('/auth/doctor/me', authMiddleware, getProfile);
+router.post('/doctor/register', registerDoctor);
 
 // Patient routes
-router.post('/auth/patient/register', (req, res, next) => {
-  req.body.role = 'patient';
-  next();
-}, login);
+router.post('/patient/register', registerPatient);
 
-router.post('/auth/patient/login', login);
-router.get('/auth/patient/me', authMiddleware, getProfile);
+// Common routes
+router.post('/login', login);
+router.get('/profile', authMiddleware, getProfile);
+router.put('/profile', authMiddleware, updateProfile);
 
-module.exports = router; 
+export default router; 

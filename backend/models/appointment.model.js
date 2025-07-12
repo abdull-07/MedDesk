@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const appointmentSchema = new mongoose.Schema({
   patient: {
@@ -112,4 +112,5 @@ appointmentSchema.statics.checkForConflicts = async function(doctorId, startTime
   return conflictingAppointment;
 };
 
-module.exports = mongoose.model('Appointment', appointmentSchema); 
+const Appointment = mongoose.model('Appointment', appointmentSchema);
+export default Appointment; 

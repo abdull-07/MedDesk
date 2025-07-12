@@ -1,9 +1,9 @@
-const Appointment = require('../models/appointment.model');
-const User = require('../models/user.model');
-const NotificationService = require('../services/notification.service');
+import Appointment from '../models/appointment.model.js';
+import User from '../models/user.model.js';
+import NotificationService from '../services/notification.service.js';
 
 // Create new appointment
-const createAppointment = async (req, res) => {
+export const createAppointment = async (req, res) => {
   try {
     const {
       doctorId,
@@ -113,7 +113,7 @@ const createAppointment = async (req, res) => {
 };
 
 // Get appointments (filtered by role)
-const getAppointments = async (req, res) => {
+export const getAppointments = async (req, res) => {
   try {
     const { status, date } = req.query;
     let query = {};
@@ -160,7 +160,7 @@ const getAppointments = async (req, res) => {
 };
 
 // Get specific appointment
-const getAppointmentById = async (req, res) => {
+export const getAppointmentById = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
       .populate('patient', 'name email')
@@ -193,7 +193,7 @@ const getAppointmentById = async (req, res) => {
 };
 
 // Update appointment (doctors only)
-const updateAppointment = async (req, res) => {
+export const updateAppointment = async (req, res) => {
   try {
     const { status, notes } = req.body;
     
@@ -232,7 +232,7 @@ const updateAppointment = async (req, res) => {
 };
 
 // Cancel appointment
-const cancelAppointment = async (req, res) => {
+export const cancelAppointment = async (req, res) => {
   try {
     const { reason } = req.body;
     
@@ -251,12 +251,19 @@ const cancelAppointment = async (req, res) => {
     }
 
     // Check if user has permission to cancel
-    if (appointment.patient.toString() !== req.user.id && 
-        appointment.doctor.toString() !== req.user.id) {
+    if (
+      req.user.role === 'patient' && appointment.patient.toString() !== req.user.id ||
+      req.user.role === 'doctor' && appointment.doctor.toString() !== req.user.id
+    ) {
       return res.status(403).json({
-        message: 'Not authorized to cancel this appointment'
+        message: 'Access denied'
       });
     }
+
+    // Update appointment status
+    appointment.status = 'cancelled';
+    appointment.cancellationReason = reason;
+    await appointment.save();
 
     // Get user details
     const [patient, doctor] = await Promise.all([
@@ -267,34 +274,16 @@ const cancelAppointment = async (req, res) => {
     // Format date and time for notifications
     const { date, time } = NotificationService.formatDateTime(appointment.startTime);
 
-    // Update appointment status
-    appointment.status = 'cancelled';
-    appointment.cancellationReason = reason;
-    await appointment.save();
+    // Create notification for other party
+    const recipientId = req.user.role === 'patient' ? appointment.doctor : appointment.patient;
+    const recipientName = req.user.role === 'patient' ? doctor.name : patient.name;
+    const cancellerName = req.user.role === 'patient' ? patient.name : `Dr. ${doctor.name}`;
 
-    // Create notification for doctor
     await NotificationService.createNotification({
-      recipient: appointment.doctor,
+      recipient: recipientId,
       type: 'APPOINTMENT_CANCELLED',
       title: 'Appointment Cancelled',
-      message: `Appointment with ${patient.name} on ${date} at ${time} has been cancelled`,
-      relatedTo: {
-        model: 'Appointment',
-        id: appointment._id
-      },
-      doctorName: doctor.name,
-      patientName: patient.name,
-      date,
-      time,
-      reason
-    });
-
-    // Create notification for patient
-    await NotificationService.createNotification({
-      recipient: appointment.patient,
-      type: 'APPOINTMENT_CANCELLED',
-      title: 'Appointment Cancelled',
-      message: `Your appointment with Dr. ${doctor.name} on ${date} at ${time} has been cancelled`,
+      message: `${cancellerName} has cancelled the appointment scheduled for ${date} at ${time}. Reason: ${reason}`,
       relatedTo: {
         model: 'Appointment',
         id: appointment._id
@@ -314,13 +303,13 @@ const cancelAppointment = async (req, res) => {
   } catch (error) {
     console.error('Cancel appointment error:', error);
     res.status(500).json({
-      message: 'Internal server error'
+      message: error.message || 'Internal server error'
     });
   }
 };
 
 // Reschedule appointment
-const rescheduleAppointment = async (req, res) => {
+export const rescheduleAppointment = async (req, res) => {
   try {
     const { startTime, endTime } = req.body;
 
@@ -416,17 +405,16 @@ const rescheduleAppointment = async (req, res) => {
 };
 
 // Get doctor's schedule
-const getDoctorSchedule = async (req, res) => {
+export const getDoctorSchedule = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-
+    
     if (!startDate || !endDate) {
       return res.status(400).json({
         message: 'Please provide start and end dates'
       });
     }
 
-    // Validate doctor exists and is verified
     const doctor = await User.findOne({
       _id: req.params.id,
       role: 'doctor',
@@ -439,33 +427,28 @@ const getDoctorSchedule = async (req, res) => {
       });
     }
 
-    // Get all appointments in date range
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
     const appointments = await Appointment.find({
       doctor: req.params.id,
-      startTime: { $gte: new Date(startDate) },
-      endTime: { $lte: new Date(endDate) },
-      status: 'scheduled'
-    }).select('startTime endTime');
+      startTime: { $gte: start, $lte: end },
+      status: { $ne: 'cancelled' }
+    }).select('startTime endTime status');
 
     res.json({
-      doctorId: req.params.id,
+      doctorId: doctor._id,
+      doctorName: doctor.name,
       appointments
     });
 
   } catch (error) {
     console.error('Get doctor schedule error:', error);
     res.status(500).json({
-      message: 'Internal server error'
+      message: error.message || 'Internal server error'
     });
   }
-};
-
-module.exports = {
-  createAppointment,
-  getAppointments,
-  getAppointmentById,
-  updateAppointment,
-  cancelAppointment,
-  rescheduleAppointment,
-  getDoctorSchedule
 }; 

@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -23,6 +23,67 @@ const userSchema = new mongoose.Schema({
     required: true,
     enum: ['patient', 'doctor', 'admin'],
     default: 'patient'
+  },
+  phone: {
+    type: String,
+    trim: true
+  },
+  dateOfBirth: {
+    type: Date
+  },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other']
+  },
+  bloodGroup: {
+    type: String,
+    enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+  },
+  address: {
+    street: {
+      type: String,
+      trim: true
+    },
+    city: {
+      type: String,
+      trim: true
+    },
+    state: {
+      type: String,
+      trim: true
+    },
+    zipCode: {
+      type: String,
+      trim: true
+    }
+  },
+  emergencyContact: {
+    name: {
+      type: String,
+      trim: true
+    },
+    relationship: {
+      type: String,
+      trim: true
+    },
+    phone: {
+      type: String,
+      trim: true
+    }
+  },
+  medicalHistory: {
+    conditions: [{
+      type: String,
+      trim: true
+    }],
+    allergies: [{
+      type: String,
+      trim: true
+    }],
+    medications: [{
+      type: String,
+      trim: true
+    }]
   },
   // Doctor specific fields
   specialization: {
@@ -61,7 +122,7 @@ const userSchema = new mongoose.Schema({
       return this.role !== 'doctor'; // true for patients, false for doctors
     }
   },
-  // New fields for doctor search and filtering
+  // Doctor search and filtering fields
   ratings: {
     total: {
       type: Number,
@@ -134,7 +195,6 @@ const userSchema = new mongoose.Schema({
 // Create indexes for search
 userSchema.index({ 'name': 'text', 'specialization': 'text', 'about': 'text', 'services': 'text' });
 userSchema.index({ 'location.coordinates': '2dsphere' });
-userSchema.index({ 'ratings.average': -1 });
 userSchema.index({ experience: -1 });
 
 // Pre-save middleware to handle doctor-specific fields
@@ -182,4 +242,4 @@ userSchema.methods.updateRating = async function(newRating) {
 
 const User = mongoose.model('User', userSchema);
 
-module.exports = User; 
+export default User; 

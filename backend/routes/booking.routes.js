@@ -1,18 +1,19 @@
-const express = require('express');
-const router = express.Router();
-const { authMiddleware } = require('../middleware/auth.middleware');
-const { roleCheck } = require('../middleware/role.middleware');
-const {
+import express from 'express';
+import { authenticateToken } from '../middleware/auth.middleware.js';
+import { roleCheck } from '../middleware/role.middleware.js';
+import {
   searchDoctors,
   getDoctorAvailability,
   getNextAvailable,
   initiateBooking,
   confirmBooking,
   rescheduleAppointment
-} = require('../controllers/booking.controller');
+} from '../controllers/booking.controller.js';
+
+const router = express.Router();
 
 // All routes require patient authentication
-router.use(authMiddleware);
+router.use(authenticateToken);
 router.use(roleCheck(['patient']));
 
 // Search doctors with filters
@@ -33,4 +34,4 @@ router.post('/appointments/confirm', confirmBooking);
 // Reschedule appointment
 router.post('/appointments/:id/reschedule', rescheduleAppointment);
 
-module.exports = router; 
+export default router; 

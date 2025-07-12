@@ -1,8 +1,6 @@
-const express = require('express');
-const router = express.Router();
-const { authMiddleware } = require('../middleware/auth.middleware');
-const { adminOnly } = require('../middleware/auth.middleware');
-const {
+import express from 'express';
+import { authenticateToken, adminOnly } from '../middleware/auth.middleware.js';
+import {
   createReview,
   getDoctorReviews,
   getPatientReviews,
@@ -10,13 +8,15 @@ const {
   moderateReview,
   updateReview,
   deleteReview
-} = require('../controllers/review.controller');
+} from '../controllers/review.controller.js';
+
+const router = express.Router();
 
 // Public routes
 router.get('/doctor/:doctorId', getDoctorReviews);
 
 // Protected routes
-router.use(authMiddleware);
+router.use(authenticateToken);
 
 // Patient routes
 router.post('/', createReview);
@@ -29,4 +29,4 @@ router.use(adminOnly);
 router.get('/pending', getPendingReviews);
 router.patch('/:reviewId/moderate', moderateReview);
 
-module.exports = router; 
+export default router; 

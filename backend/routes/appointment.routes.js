@@ -1,20 +1,21 @@
-const express = require('express');
-const router = express.Router();
-const { authMiddleware } = require('../middleware/auth.middleware');
-const { roleCheck } = require('../middleware/role.middleware');
-const {
+import express from 'express';
+import { authenticateToken } from '../middleware/auth.middleware.js';
+import { roleCheck } from '../middleware/role.middleware.js';
+import {
   createAppointment,
   getAppointments,
   getAppointmentById,
   updateAppointment,
   cancelAppointment,
   getDoctorSchedule
-} = require('../controllers/appointment.controller');
+} from '../controllers/appointment.controller.js';
+
+const router = express.Router();
 
 // Create appointment (patients only)
 router.post(
   '/appointments',
-  authMiddleware,
+  authenticateToken,
   roleCheck(['patient']),
   createAppointment
 );
@@ -22,21 +23,21 @@ router.post(
 // Get all appointments (filtered by role)
 router.get(
   '/appointments',
-  authMiddleware,
+  authenticateToken,
   getAppointments
 );
 
 // Get specific appointment
 router.get(
   '/appointments/:id',
-  authMiddleware,
+  authenticateToken,
   getAppointmentById
 );
 
 // Update appointment (doctors only)
 router.put(
   '/appointments/:id',
-  authMiddleware,
+  authenticateToken,
   roleCheck(['doctor']),
   updateAppointment
 );
@@ -44,7 +45,7 @@ router.put(
 // Cancel appointment (both patient and doctor)
 router.post(
   '/appointments/:id/cancel',
-  authMiddleware,
+  authenticateToken,
   roleCheck(['patient', 'doctor']),
   cancelAppointment
 );
@@ -52,8 +53,8 @@ router.post(
 // Get doctor's schedule (available and booked slots)
 router.get(
   '/doctors/:id/schedule',
-  authMiddleware,
+  authenticateToken,
   getDoctorSchedule
 );
 
-module.exports = router; 
+export default router; 

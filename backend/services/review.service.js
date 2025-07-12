@@ -1,7 +1,7 @@
-const Review = require('../models/review.model');
-const User = require('../models/user.model');
-const Appointment = require('../models/appointment.model');
-const NotificationService = require('./notification.service');
+import Review from '../models/review.model.js';
+import User from '../models/user.model.js';
+import Appointment from '../models/appointment.model.js';
+import NotificationService from './notification.service.js';
 
 class ReviewService {
   static async createReview(reviewData) {
@@ -249,14 +249,15 @@ class ReviewService {
     try {
       const review = await Review.findOne({
         _id: reviewId,
-        patient: patientId
+        patient: patientId,
+        status: { $ne: 'rejected' }
       });
 
       if (!review) {
         throw new Error('Review not found');
       }
 
-      // If review was approved, update doctor's rating
+      // Update doctor's rating
       if (review.status === 'approved') {
         const doctor = await User.findById(review.doctor);
         doctor.ratings.total -= review.rating;
@@ -268,8 +269,6 @@ class ReviewService {
       }
 
       await review.deleteOne();
-
-      return { message: 'Review deleted successfully' };
     } catch (error) {
       console.error('Delete review error:', error);
       throw error;
@@ -277,4 +276,4 @@ class ReviewService {
   }
 }
 
-module.exports = ReviewService; 
+export default ReviewService; 

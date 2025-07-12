@@ -1,8 +1,8 @@
-const User = require('../models/user.model');
-const { sendEmail } = require('../utils/email');
+import User from '../models/user.model.js';
+import { sendEmail } from '../utils/email.js';
 
 // Get all pending doctor verifications
-const getPendingDoctors = async (req, res) => {
+export const getPendingDoctors = async (req, res) => {
   try {
     const doctors = await User.find({
       role: 'doctor',
@@ -17,7 +17,7 @@ const getPendingDoctors = async (req, res) => {
 };
 
 // Get all doctors with filters
-const getAllDoctors = async (req, res) => {
+export const getAllDoctors = async (req, res) => {
   try {
     const { verified, specialization, search } = req.query;
     const query = { role: 'doctor' };
@@ -46,7 +46,7 @@ const getAllDoctors = async (req, res) => {
 };
 
 // Get specific doctor details
-const getDoctorDetails = async (req, res) => {
+export const getDoctorDetails = async (req, res) => {
   try {
     const doctor = await User.findOne({
       _id: req.params.id,
@@ -65,7 +65,7 @@ const getDoctorDetails = async (req, res) => {
 };
 
 // Get doctor statistics
-const getDoctorStats = async (req, res) => {
+export const getDoctorStats = async (req, res) => {
   try {
     const stats = await User.aggregate([
       { $match: { role: 'doctor' } },
@@ -107,7 +107,7 @@ const getDoctorStats = async (req, res) => {
 };
 
 // Approve doctor verification
-const verifyDoctor = async (req, res) => {
+export const verifyDoctor = async (req, res) => {
   try {
     const doctor = await User.findOne({
       _id: req.params.id,
@@ -137,7 +137,7 @@ const verifyDoctor = async (req, res) => {
 };
 
 // Reject doctor verification
-const rejectDoctor = async (req, res) => {
+export const rejectDoctor = async (req, res) => {
   try {
     const { reason } = req.body;
 
@@ -170,13 +170,4 @@ const rejectDoctor = async (req, res) => {
     console.error('Reject doctor error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
-};
-
-module.exports = {
-  getPendingDoctors,
-  getAllDoctors,
-  getDoctorDetails,
-  getDoctorStats,
-  verifyDoctor,
-  rejectDoctor
 }; 

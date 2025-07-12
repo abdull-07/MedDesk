@@ -1,4 +1,4 @@
-const Appointment = require('../models/appointment.model');
+import Appointment from '../models/appointment.model.js';
 
 // Duration of each slot in minutes
 const SLOT_DURATION = 30;
@@ -115,9 +115,11 @@ const getNextAvailableSlot = async (doctorId, fromDate = new Date()) => {
   }
 };
 
-module.exports = {
+const availabilityService = {
   getAvailableSlots,
   isSlotAvailable,
   getNextAvailableSlot,
   SLOT_DURATION
-}; 
+};
+
+export default availabilityService; 

@@ -1,6 +1,6 @@
-const User = require('../models/user.model');
-const Schedule = require('../models/schedule.model');
-const Appointment = require('../models/appointment.model');
+import User from '../models/user.model.js';
+import Schedule from '../models/schedule.model.js';
+import Appointment from '../models/appointment.model.js';
 
 class DoctorService {
   static async searchDoctors(filters = {}, options = {}) {
@@ -200,4 +200,4 @@ class DoctorService {
   }
 }
 
-module.exports = DoctorService; 
+export default DoctorService; 

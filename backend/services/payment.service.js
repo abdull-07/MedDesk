@@ -1,8 +1,8 @@
-const Payment = require('../models/payment.model');
-const Appointment = require('../models/appointment.model');
-const NotificationService = require('./notification.service');
-const crypto = require('crypto');
-const axios = require('axios');
+import Payment from '../models/payment.model.js';
+import Appointment from '../models/appointment.model.js';
+import NotificationService from './notification.service.js';
+import crypto from 'crypto';
+import axios from 'axios';
 
 class PaymentService {
   constructor() {
@@ -233,4 +233,5 @@ class PaymentService {
   }
 }
 
-module.exports = new PaymentService(); 
+const paymentService = new PaymentService();
+export default paymentService; 

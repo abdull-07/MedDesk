@@ -1,6 +1,6 @@
-const Notification = require('../models/notification.model');
-const User = require('../models/user.model');
-const { sendEmail } = require('../utils/email');
+import Notification from '../models/notification.model.js';
+import User from '../models/user.model.js';
+import { sendEmail } from '../utils/email.js';
 
 class NotificationService {
   static async createNotification(data) {
@@ -171,4 +171,4 @@ class NotificationService {
   }
 }
 
-module.exports = NotificationService; 
+export default NotificationService; 

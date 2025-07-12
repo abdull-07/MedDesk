@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
-const Admin = require('../models/admin.model');
-const User = require('../models/user.model');
+import jwt from 'jsonwebtoken';
+import Admin from '../models/admin.model.js';
+import User from '../models/user.model.js';
 
 // Helper function to generate JWT token
 const generateToken = (user) => {
@@ -15,7 +15,7 @@ const generateToken = (user) => {
   );
 };
 
-const adminLogin = async (req, res) => {
+export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -76,7 +76,7 @@ const adminLogin = async (req, res) => {
 };
 
 // Doctor Registration
-const registerDoctor = async (req, res) => {
+export const registerDoctor = async (req, res) => {
   try {
     const { 
       name, 
@@ -162,59 +162,44 @@ const registerDoctor = async (req, res) => {
 };
 
 // Patient Registration
-const registerPatient = async (req, res) => {
+export const registerPatient = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
     // Validate required fields
     if (!name || !email || !password) {
-      return res.status(400).json({ 
-        message: 'Please provide all required fields' 
-      });
+      return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: 'Please provide a valid email address' });
-    }
-
-    // Validate password strength
-    if (password.length < 6) {
-      return res.status(400).json({ 
-        message: 'Password must be at least 6 characters long' 
-      });
-    }
-
-    // Check if email already exists
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Create new patient
-    const patient = new User({
+    // Create new user
+    const user = new User({
       name,
       email,
       password,
-      role: 'patient'
-      // isVerified will default to true for patients
+      role: 'patient',
+      isVerified: true // Patients are auto-verified
     });
 
-    await patient.save();
+    await user.save();
 
     // Generate token
-    const token = generateToken(patient);
+    const token = generateToken(user);
 
+    // Return success response
     res.status(201).json({
       message: 'Registration successful',
       token,
       user: {
-        id: patient._id,
-        name: patient.name,
-        email: patient.email,
-        role: patient.role,
-        isVerified: patient.isVerified
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
       }
     });
 
@@ -225,7 +210,7 @@ const registerPatient = async (req, res) => {
 };
 
 // User Login
-const login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -249,16 +234,15 @@ const login = async (req, res) => {
     // For doctors, check verification status
     if (user.role === 'doctor' && !user.isVerified) {
       return res.status(403).json({ 
-        message: 'Your account is pending verification by admin',
-        isPending: true
+        message: 'Your account is pending verification by admin'
       });
     }
 
-    // Generate token and send response
+    // Generate token
     const token = generateToken(user);
 
     res.json({
-      message: 'Login successful',
+      message: 'Logged in successfully',
       token,
       user: {
         id: user._id,
@@ -279,25 +263,109 @@ const login = async (req, res) => {
   }
 };
 
-// Get User Profile
-const getProfile = async (req, res) => {
+// Get user profile
+export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id)
+      .select('-password')
+      .lean(); // Use lean() for better performance
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    // Initialize default values for nested objects if they don't exist
+    const profile = {
+      ...user,
+      address: user.address || {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: ''
+      },
+      emergencyContact: user.emergencyContact || {
+        name: '',
+        relationship: '',
+        phone: ''
+      },
+      medicalHistory: user.medicalHistory || {
+        conditions: [],
+        allergies: [],
+        medications: []
+      }
+    };
+
+    // Format date if it exists
+    if (profile.dateOfBirth) {
+      profile.dateOfBirth = new Date(profile.dateOfBirth).toISOString().split('T')[0];
+    }
+
+    console.log('Fetched profile:', profile);
+    res.json(profile);
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-module.exports = {
-  adminLogin,
-  registerDoctor,
-  registerPatient,
-  login,
-  getProfile
+// Update user profile
+export const updateProfile = async (req, res) => {
+  try {
+    const {
+      name,
+      phone,
+      dateOfBirth,
+      gender,
+      bloodGroup,
+      address,
+      emergencyContact,
+      medicalHistory
+    } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update basic fields
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (dateOfBirth) user.dateOfBirth = dateOfBirth;
+    if (gender) user.gender = gender;
+    if (bloodGroup) user.bloodGroup = bloodGroup;
+
+    // Update address if provided
+    if (address) {
+      user.address = {
+        ...user.address,
+        ...address
+      };
+    }
+
+    // Update emergency contact if provided
+    if (emergencyContact) {
+      user.emergencyContact = {
+        ...user.emergencyContact,
+        ...emergencyContact
+      };
+    }
+
+    // Update medical history if provided
+    if (medicalHistory) {
+      user.medicalHistory = {
+        ...user.medicalHistory,
+        ...medicalHistory
+      };
+    }
+
+    await user.save();
+
+    // Return updated user without password
+    const updatedUser = await User.findById(user._id).select('-password');
+    res.json(updatedUser);
+
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 }; 
