@@ -31,7 +31,8 @@ const paymentSchema = new mongoose.Schema({
   },
   transactionId: {
     type: String,
-    sparse: true
+    sparse: true,
+    index: true // Define index here instead of using schema.index()
   },
   lastResponseCode: String,
   lastResponseMessage: String,
@@ -51,7 +52,7 @@ const paymentSchema = new mongoose.Schema({
 paymentSchema.index({ appointment: 1 });
 paymentSchema.index({ patient: 1 });
 paymentSchema.index({ doctor: 1 });
-paymentSchema.index({ transactionId: 1 });
+// Removed duplicate transactionId index
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ createdAt: -1 });
 
