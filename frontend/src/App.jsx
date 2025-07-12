@@ -6,6 +6,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import PatientSignUp from './pages/auth/PatientSignUp';
 import DoctorSignUp from './pages/auth/DoctorSignUp';
 import SignIn from './pages/auth/SignIn';
+import Profile from './pages/auth/Profile';
 
 // Common Pages
 import Home from './pages/common/Home';
@@ -92,6 +93,7 @@ function App() {
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/profile" element={<Profile />} />
 
             {/* Redirect /sign-up to patient signup by default */}
             <Route path="/sign-up" element={<PatientSignUp />} />

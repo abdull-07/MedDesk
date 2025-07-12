@@ -1,46 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../utils/api';
 
 const Profile = () => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  const [userRole, setUserRole] = useState('');
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
-    phoneNumber: '',
+    phone: '',
     dateOfBirth: '',
-    address: '',
+    gender: '',
+    bloodGroup: '',
+    address: {
+      street: '',
     city: '',
     state: '',
     zipCode: '',
-    
-    // Patient specific fields
+    },
     emergencyContact: {
       name: '',
       relationship: '',
       phone: '',
     },
-    insuranceProvider: '',
-    insuranceNumber: '',
-    
-    // Doctor specific fields
-    specialization: '',
-    licenseNumber: '',
-    yearsOfExperience: '',
-    education: '',
-    hospitalAffiliation: '',
-    availableHours: {
-      start: '',
-      end: '',
-    },
-    consultationFee: '',
+    medicalHistory: {
+      conditions: [],
+      allergies: [],
+      medications: [],
+    }
   });
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchUserProfile();
@@ -49,21 +41,36 @@ const Profile = () => {
   const fetchUserProfile = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/profile', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      const data = await response.json();
-      
-      if (response.ok) {
-        setFormData(data.profile);
-        setUserRole(data.role);
-      } else {
-        setError('Failed to fetch profile information');
+      const response = await api.get('/auth/profile');
+      if (response.data) {
+        // Transform date format for date input
+        const userData = {
+          ...response.data,
+          dateOfBirth: response.data.dateOfBirth ? new Date(response.data.dateOfBirth).toISOString().split('T')[0] : '',
+          // Initialize nested objects if they don't exist
+          address: response.data.address || {
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+          },
+          emergencyContact: response.data.emergencyContact || {
+            name: '',
+            relationship: '',
+            phone: '',
+          },
+          medicalHistory: response.data.medicalHistory || {
+            conditions: [],
+            allergies: [],
+            medications: [],
+          }
+        };
+        setFormData(userData);
+        console.log('Profile data loaded:', userData);
       }
     } catch (err) {
-      setError('An error occurred while fetching your profile');
+      console.error('Profile fetch error:', err);
+      setError(err.response?.data?.message || 'Failed to fetch profile information');
     } finally {
       setIsLoading(false);
     }
@@ -88,6 +95,16 @@ const Profile = () => {
     }
   };
 
+  const handleArrayChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      medicalHistory: {
+        ...prev.medicalHistory,
+        [field]: value.split('\n').filter(item => item.trim() !== '')
+      }
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -95,145 +112,68 @@ const Profile = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const response = await api.put('/auth/profile', formData);
+      if (response.data) {
         setSuccess('Profile updated successfully');
         setIsEditing(false);
-      } else {
-        setError(data.message || 'Failed to update profile');
+        // Refresh the profile data
+        await fetchUserProfile();
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      console.error('Profile update error:', err);
+      setError(err.response?.data?.message || 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const renderField = (label, value, name = '') => (
+  const renderField = (label, value, name = '', type = 'text') => (
     <div className="sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
       <dt className="text-sm font-medium text-[#1D3557]">{label}</dt>
       <dd className="mt-1 text-sm text-[#457B9D] sm:mt-0 sm:col-span-2">
         {isEditing && name ? (
+          type === 'select' ? (
+            <select
+              name={name}
+              value={value || ''}
+              onChange={handleChange}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
+            >
+              <option value="">Select {label}</option>
+              {name === 'gender' && (
+                <>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </>
+              )}
+              {name === 'bloodGroup' && (
+                <>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </>
+              )}
+            </select>
+          ) : (
           <input
-            type="text"
+              type={type}
             name={name}
-            value={value}
+              value={value || ''}
             onChange={handleChange}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
           />
+          )
         ) : (
           value || 'Not provided'
         )}
       </dd>
     </div>
-  );
-
-  const renderCommonFields = () => (
-    <>
-      <div className="border-t border-gray-200">
-        <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-          <dt className="text-sm font-medium text-[#1D3557]">Full name</dt>
-          <dd className="mt-1 text-sm text-[#457B9D] sm:mt-0 sm:col-span-2">
-            {isEditing ? (
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
-                  placeholder="First Name"
-                />
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
-                  placeholder="Last Name"
-                />
-              </div>
-            ) : (
-              `${formData.firstName} ${formData.lastName}`
-            )}
-          </dd>
-        </div>
-        {renderField('Email', formData.email)}
-        {renderField('Phone Number', formData.phoneNumber, 'phoneNumber')}
-        {renderField('Date of Birth', formData.dateOfBirth, 'dateOfBirth')}
-        {renderField('City', formData.city, 'city')}
-        {renderField('State', formData.state, 'state')}
-        {renderField('ZIP Code', formData.zipCode, 'zipCode')}
-      </div>
-    </>
-  );
-
-  const renderPatientFields = () => (
-    <>
-      <div className="border-t border-gray-200 pt-6">
-        <h3 className="text-lg font-medium text-[#1D3557] px-4 sm:px-6">Emergency Contact</h3>
-        {renderField('Name', formData.emergencyContact.name, 'emergencyContact.name')}
-        {renderField('Relationship', formData.emergencyContact.relationship, 'emergencyContact.relationship')}
-        {renderField('Phone', formData.emergencyContact.phone, 'emergencyContact.phone')}
-      </div>
-      <div className="border-t border-gray-200 pt-6">
-        <h3 className="text-lg font-medium text-[#1D3557] px-4 sm:px-6">Insurance Information</h3>
-        {renderField('Provider', formData.insuranceProvider, 'insuranceProvider')}
-        {renderField('Number', formData.insuranceNumber, 'insuranceNumber')}
-      </div>
-    </>
-  );
-
-  const renderDoctorFields = () => (
-    <>
-      <div className="border-t border-gray-200 pt-6">
-        <h3 className="text-lg font-medium text-[#1D3557] px-4 sm:px-6">Professional Information</h3>
-        {renderField('Specialization', formData.specialization, 'specialization')}
-        {renderField('License Number', formData.licenseNumber, 'licenseNumber')}
-        {renderField('Years of Experience', formData.yearsOfExperience, 'yearsOfExperience')}
-        {renderField('Education', formData.education, 'education')}
-        {renderField('Hospital Affiliation', formData.hospitalAffiliation, 'hospitalAffiliation')}
-      </div>
-      <div className="border-t border-gray-200 pt-6">
-        <h3 className="text-lg font-medium text-[#1D3557] px-4 sm:px-6">Availability & Fees</h3>
-        <div className="sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
-          <dt className="text-sm font-medium text-[#1D3557]">Available Hours</dt>
-          <dd className="mt-1 text-sm text-[#457B9D] sm:mt-0 sm:col-span-2">
-            {isEditing ? (
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="time"
-                  name="availableHours.start"
-                  value={formData.availableHours.start}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
-                />
-                <input
-                  type="time"
-                  name="availableHours.end"
-                  value={formData.availableHours.end}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
-                />
-              </div>
-            ) : (
-              `${formData.availableHours.start} - ${formData.availableHours.end}`
-            )}
-          </dd>
-        </div>
-        {renderField('Consultation Fee ($)', formData.consultationFee, 'consultationFee')}
-      </div>
-    </>
   );
 
   if (isLoading && !isEditing) {
@@ -250,9 +190,9 @@ const Profile = () => {
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
             <div>
-              <h2 className="text-3xl font-extrabold text-[#1D3557]">Profile</h2>
+              <h2 className="text-3xl font-extrabold text-[#1D3557]">My Profile</h2>
               <p className="mt-1 max-w-2xl text-sm text-[#457B9D]">
-                Your personal and account details
+                Manage your personal information and medical history
               </p>
             </div>
             <button
@@ -284,9 +224,108 @@ const Profile = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="border-t border-gray-200">
-              {renderCommonFields()}
-              {userRole === 'patient' && renderPatientFields()}
-              {userRole === 'doctor' && renderDoctorFields()}
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-1 sm:gap-4 sm:px-6">
+                <h3 className="text-lg font-medium text-[#1D3557]">Personal Information</h3>
+              </div>
+              {renderField('Full Name', formData.name, 'name')}
+              {renderField('Email', formData.email, 'email', 'email')}
+              {renderField('Phone', formData.phone, 'phone', 'tel')}
+              {renderField('Date of Birth', formData.dateOfBirth, 'dateOfBirth', 'date')}
+              {renderField('Gender', formData.gender, 'gender', 'select')}
+              {renderField('Blood Group', formData.bloodGroup, 'bloodGroup', 'select')}
+            </div>
+
+            <div className="border-t border-gray-200">
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-1 sm:gap-4 sm:px-6">
+                <h3 className="text-lg font-medium text-[#1D3557]">Address</h3>
+              </div>
+              {renderField('Street', formData.address.street, 'address.street')}
+              {renderField('City', formData.address.city, 'address.city')}
+              {renderField('State', formData.address.state, 'address.state')}
+              {renderField('ZIP Code', formData.address.zipCode, 'address.zipCode')}
+            </div>
+
+            <div className="border-t border-gray-200">
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-1 sm:gap-4 sm:px-6">
+                <h3 className="text-lg font-medium text-[#1D3557]">Emergency Contact</h3>
+              </div>
+              {renderField('Name', formData.emergencyContact.name, 'emergencyContact.name')}
+              {renderField('Relationship', formData.emergencyContact.relationship, 'emergencyContact.relationship')}
+              {renderField('Phone', formData.emergencyContact.phone, 'emergencyContact.phone', 'tel')}
+            </div>
+
+            <div className="border-t border-gray-200">
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-1 sm:gap-4 sm:px-6">
+                <h3 className="text-lg font-medium text-[#1D3557]">Medical History</h3>
+              </div>
+              <div className="px-4 py-5 sm:px-6">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-[#1D3557] mb-2">Medical Conditions</label>
+                  {isEditing ? (
+                    <textarea
+                      value={formData.medicalHistory.conditions.join('\n')}
+                      onChange={(e) => handleArrayChange('conditions', e.target.value)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
+                      rows={3}
+                      placeholder="Enter each condition on a new line"
+                    />
+                  ) : (
+                    <ul className="list-disc list-inside text-sm text-[#457B9D]">
+                      {formData.medicalHistory.conditions.length > 0 ? (
+                        formData.medicalHistory.conditions.map((condition, index) => (
+                          <li key={index}>{condition}</li>
+                        ))
+                      ) : (
+                        <li className="text-gray-500">No medical conditions listed</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-[#1D3557] mb-2">Allergies</label>
+                  {isEditing ? (
+                    <textarea
+                      value={formData.medicalHistory.allergies.join('\n')}
+                      onChange={(e) => handleArrayChange('allergies', e.target.value)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
+                      rows={3}
+                      placeholder="Enter each allergy on a new line"
+                    />
+                  ) : (
+                    <ul className="list-disc list-inside text-sm text-[#457B9D]">
+                      {formData.medicalHistory.allergies.length > 0 ? (
+                        formData.medicalHistory.allergies.map((allergy, index) => (
+                          <li key={index}>{allergy}</li>
+                        ))
+                      ) : (
+                        <li className="text-gray-500">No allergies listed</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1D3557] mb-2">Current Medications</label>
+                  {isEditing ? (
+                    <textarea
+                      value={formData.medicalHistory.medications.join('\n')}
+                      onChange={(e) => handleArrayChange('medications', e.target.value)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
+                      rows={3}
+                      placeholder="Enter each medication on a new line"
+                    />
+                  ) : (
+                    <ul className="list-disc list-inside text-sm text-[#457B9D]">
+                      {formData.medicalHistory.medications.length > 0 ? (
+                        formData.medicalHistory.medications.map((medication, index) => (
+                          <li key={index}>{medication}</li>
+                        ))
+                      ) : (
+                        <li className="text-gray-500">No current medications listed</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              </div>
             </div>
 
             {isEditing && (

@@ -2,11 +2,10 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json',
-  },
-  withCredentials: true
+  }
 });
 
 // Add a request interceptor
@@ -35,13 +34,19 @@ api.interceptors.response.use(
       // Handle 401 Unauthorized errors
       if (error.response.status === 401) {
         // Clear localStorage
-        localStorage.clear();
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         // Redirect to login page
-        window.location.href = '/signin';
+        window.location.href = '/sign-in';
       }
       
       // Return the error message from the server
       return Promise.reject(error.response.data);
+    }
+    
+    // Handle network errors
+    if (error.request) {
+      return Promise.reject({ message: 'Network error. Please check your connection.' });
     }
     
     return Promise.reject(error);

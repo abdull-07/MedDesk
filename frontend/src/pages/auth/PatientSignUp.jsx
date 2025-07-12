@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import api from '../../utils/api';
 
 const PatientSignUp = () => {
   const navigate = useNavigate();
@@ -26,28 +27,16 @@ const PatientSignUp = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/patient/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      const response = await api.post('/auth/patient/register', formData);
+      
+      // Store token and user data
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
 
       // Redirect to patient dashboard
       navigate('/patient/dashboard');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
