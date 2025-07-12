@@ -57,4 +57,4 @@ paymentSchema.index({ status: 1 });
 paymentSchema.index({ createdAt: -1 });
 
 const Payment = mongoose.model('Payment', paymentSchema);
-export default Payment; 
+export default Payment;

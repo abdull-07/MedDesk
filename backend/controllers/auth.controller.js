@@ -267,8 +267,8 @@ export const login = async (req, res) => {
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
-      .select('-password')
-      .lean(); // Use lean() for better performance
+      .select('-password -__v')
+      .lean();
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -281,17 +281,21 @@ export const getProfile = async (req, res) => {
         street: '',
         city: '',
         state: '',
-        zipCode: ''
+        zipCode: '',
+        country: ''
       },
       emergencyContact: user.emergencyContact || {
         name: '',
         relationship: '',
-        phone: ''
+        phone: '',
+        email: ''
       },
       medicalHistory: user.medicalHistory || {
         conditions: [],
         allergies: [],
-        medications: []
+        medications: [],
+        surgeries: [],
+        familyHistory: []
       }
     };
 
@@ -300,11 +304,17 @@ export const getProfile = async (req, res) => {
       profile.dateOfBirth = new Date(profile.dateOfBirth).toISOString().split('T')[0];
     }
 
-    console.log('Fetched profile:', profile);
-    res.json(profile);
+    res.json({
+      success: true,
+      data: profile
+    });
   } catch (error) {
     console.error('Get profile error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch profile',
+      error: error.message 
+    });
   }
 };
 
@@ -322,50 +332,124 @@ export const updateProfile = async (req, res) => {
       medicalHistory
     } = req.body;
 
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    // Input validation
+    if (phone && !/^\+?[\d\s-]{10,}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid phone number format'
+      });
     }
 
-    // Update basic fields
-    if (name) user.name = name;
-    if (phone) user.phone = phone;
-    if (dateOfBirth) user.dateOfBirth = dateOfBirth;
-    if (gender) user.gender = gender;
+    if (dateOfBirth && isNaN(new Date(dateOfBirth).getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format for date of birth'
+      });
+    }
+
+    if (gender && !['male', 'female', 'other'].includes(gender.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid gender value'
+      });
+    }
+
+    if (bloodGroup && !['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].includes(bloodGroup)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid blood group'
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update basic fields if provided
+    if (name) user.name = name.trim();
+    if (phone) user.phone = phone.trim();
+    if (dateOfBirth) user.dateOfBirth = new Date(dateOfBirth);
+    if (gender) user.gender = gender.toLowerCase();
     if (bloodGroup) user.bloodGroup = bloodGroup;
 
     // Update address if provided
     if (address) {
       user.address = {
-        ...user.address,
-        ...address
+        ...user.address || {},
+        ...address,
+        street: address.street?.trim(),
+        city: address.city?.trim(),
+        state: address.state?.trim(),
+        zipCode: address.zipCode?.trim(),
+        country: address.country?.trim()
       };
     }
 
     // Update emergency contact if provided
     if (emergencyContact) {
+      // Validate emergency contact phone if provided
+      if (emergencyContact.phone && !/^\+?[\d\s-]{10,}$/.test(emergencyContact.phone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid emergency contact phone number format'
+        });
+      }
+
+      // Validate emergency contact email if provided
+      if (emergencyContact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emergencyContact.email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid emergency contact email format'
+        });
+      }
+
       user.emergencyContact = {
-        ...user.emergencyContact,
-        ...emergencyContact
+        ...user.emergencyContact || {},
+        ...emergencyContact,
+        name: emergencyContact.name?.trim(),
+        relationship: emergencyContact.relationship?.trim(),
+        phone: emergencyContact.phone?.trim(),
+        email: emergencyContact.email?.trim()
       };
     }
 
     // Update medical history if provided
     if (medicalHistory) {
       user.medicalHistory = {
-        ...user.medicalHistory,
-        ...medicalHistory
+        ...user.medicalHistory || {},
+        ...medicalHistory,
+        conditions: medicalHistory.conditions?.map(c => c.trim()) || user.medicalHistory?.conditions || [],
+        allergies: medicalHistory.allergies?.map(a => a.trim()) || user.medicalHistory?.allergies || [],
+        medications: medicalHistory.medications?.map(m => m.trim()) || user.medicalHistory?.medications || [],
+        surgeries: medicalHistory.surgeries?.map(s => s.trim()) || user.medicalHistory?.surgeries || [],
+        familyHistory: medicalHistory.familyHistory?.map(f => f.trim()) || user.medicalHistory?.familyHistory || []
       };
     }
 
+    // Save the updated user
     await user.save();
 
-    // Return updated user without password
-    const updatedUser = await User.findById(user._id).select('-password');
-    res.json(updatedUser);
+    // Return updated user without sensitive fields
+    const updatedUser = await User.findById(user._id)
+      .select('-password -__v')
+      .lean();
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser
+    });
 
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      error: error.message
+    });
   }
 }; 
