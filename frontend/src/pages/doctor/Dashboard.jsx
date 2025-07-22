@@ -174,7 +174,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-[#1D3557]">Today's Schedule</h2>
               <Link
-                to="/appointments"
+                to="/doctor/appointments"
                 className="text-sm font-medium text-[#006D77] hover:text-[#83C5BE] transition-colors duration-300"
               >
                 View all appointments
@@ -205,7 +205,7 @@ const Dashboard = () => {
                 }
                 title="Manage Schedule"
                 description="Update your availability and working hours"
-                to="/schedule"
+                to="/doctor/schedule"
               />
               <QuickAction
                 icon={
@@ -215,7 +215,7 @@ const Dashboard = () => {
                 }
                 title="View Patients"
                 description="Access your patient records and history"
-                to="/patients"
+                to="/doctor/patients"
               />
               <QuickAction
                 icon={
@@ -225,7 +225,7 @@ const Dashboard = () => {
                 }
                 title="Update Profile"
                 description="Edit your professional information"
-                to="/profile"
+                to="/doctor/profile"
               />
               <QuickAction
                 icon={

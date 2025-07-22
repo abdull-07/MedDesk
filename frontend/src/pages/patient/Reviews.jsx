@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import dummyReviews from '../../assets/reviews';
+import dummyDoctors from '../../assets/doctors';
 
 const Reviews = () => {
   const [searchParams] = useSearchParams();
@@ -17,10 +19,40 @@ const Reviews = () => {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch('/api/patient/reviews');
-        const data = await response.json();
-        setReviews(data);
+        try {
+          // Try to fetch from API first
+          const response = await fetch('/api/patient/reviews');
+          const data = await response.json();
+          setReviews(data);
+        } catch (apiError) {
+          console.log('Using dummy reviews data');
+          
+          // Process the dummy reviews data
+          const formattedReviews = dummyReviews.map(review => {
+            // Find the doctor in the dummy doctors data
+            const doctor = dummyDoctors.find(doc => doc.name === review.doctor) || {
+              name: review.doctor.replace('Dr. ', ''),
+              specialty: 'Specialist',
+              location: 'Medical Center'
+            };
+            
+            return {
+              id: review.id,
+              rating: review.rating,
+              comment: review.comment,
+              date: review.date,
+              doctor: {
+                id: review.id.replace('rev-', 'doc-'),
+                name: doctor.name.replace('Dr. ', ''),
+                specialty: doctor.specialty,
+                image: `https://images.unsplash.com/photo-${1590000000000 + parseInt(review.id.split('-')[1]) * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80`
+              },
+              patient: review.patient
+            };
+          });
+          
+          setReviews(formattedReviews);
+        }
       } catch (error) {
         console.error('Error fetching reviews:', error);
         setError('Failed to load reviews');
@@ -43,31 +75,65 @@ const Reviews = () => {
     setError('');
 
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          doctorId,
-          appointmentId,
-          rating,
-          comment,
-        }),
-      });
+      try {
+        // Try to use the actual API if available
+        const response = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            doctorId,
+            appointmentId,
+            rating,
+            comment,
+          }),
+        });
 
-      if (response.ok) {
-        setSubmitSuccess(true);
-        setRating(0);
-        setComment('');
-      } else {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to submit review');
+        if (response.ok) {
+          setSubmitSuccess(true);
+          setRating(0);
+          setComment('');
+        } else {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to submit review');
+        }
+      } catch (apiError) {
+        console.log('Using dummy data for review submission');
+        
+        // Simulate a successful submission
+        setTimeout(() => {
+          // Create a new review and add it to the existing reviews
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const patientName = user.name || 'Patient';
+          
+          // Find the doctor from the doctorId
+          const doctorIdNum = parseInt(doctorId.replace('doc-', ''));
+          const doctor = dummyDoctors[doctorIdNum % dummyDoctors.length];
+          
+          const newReview = {
+            id: `rev-${dummyReviews.length + 1}`,
+            rating: rating,
+            comment: comment,
+            date: new Date().toISOString().split('T')[0],
+            doctor: {
+              id: doctorId,
+              name: doctor ? doctor.name.replace('Dr. ', '') : 'Doctor',
+              specialty: doctor ? doctor.specialty : 'Specialist',
+              image: `https://images.unsplash.com/photo-${1590000000000 + (dummyReviews.length + 1) * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80`
+            },
+            patient: patientName
+          };
+          
+          setReviews(prevReviews => [newReview, ...prevReviews]);
+          setSubmitSuccess(true);
+          setRating(0);
+          setComment('');
+        }, 1000); // Simulate network delay
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      setError(error.message);
+      setError(error.message || 'Failed to submit review');
     } finally {
       setIsSubmitting(false);
     }

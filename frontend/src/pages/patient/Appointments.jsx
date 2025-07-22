@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import dummyAppointments from '../../assets/appointments';
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -10,10 +11,47 @@ const Appointments = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch('/api/patient/appointments');
-        const data = await response.json();
-        setAppointments(data);
+        try {
+          // Try to fetch from API first
+          const response = await fetch('/api/patient/appointments');
+          const data = await response.json();
+          setAppointments(data);
+        } catch (apiError) {
+          console.log('Using dummy appointments data');
+          
+          // Process upcoming appointments
+          const upcomingAppointmentsData = dummyAppointments.upcoming.map(apt => ({
+            id: apt.id,
+            doctor: {
+              id: apt.id.replace('apt-', 'doc-'),
+              name: apt.doctor.replace('Dr. ', ''),
+              specialty: apt.specialty,
+              image: `https://images.unsplash.com/photo-${1590000000000 + parseInt(apt.id.split('-')[1]) * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80`
+            },
+            date: apt.date,
+            time: apt.time,
+            location: apt.location,
+            status: apt.status
+          }));
+          
+          // Process past appointments
+          const pastAppointmentsData = dummyAppointments.past.map(apt => ({
+            id: apt.id,
+            doctor: {
+              id: apt.id.replace('apt-', 'doc-'),
+              name: apt.doctor.replace('Dr. ', ''),
+              specialty: apt.specialty,
+              image: `https://images.unsplash.com/photo-${1590000000000 + parseInt(apt.id.split('-')[1]) * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80`
+            },
+            date: apt.date,
+            time: apt.time,
+            location: apt.location,
+            status: apt.status
+          }));
+          
+          // Combine all appointments
+          setAppointments([...upcomingAppointmentsData, ...pastAppointmentsData]);
+        }
       } catch (error) {
         console.error('Error fetching appointments:', error);
         setError('Failed to load appointments');

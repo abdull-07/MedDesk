@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import dummyDoctors from '../../assets/doctors';
 
 const DoctorsList = () => {
   const [doctors, setDoctors] = useState([]);
@@ -31,12 +32,29 @@ const DoctorsList = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch('/api/doctors');
-        const data = await response.json();
-        setDoctors(data);
+        // Try to fetch data from API, but use dummy data if endpoint doesn't exist yet
+        try {
+          const response = await fetch('/api/doctors');
+          const data = await response.json();
+          setDoctors(data);
+        } catch (apiError) {
+          console.log('Doctors API endpoint not available yet, using dummy data');
+          
+          // Process the dummy doctors data to match the expected format
+          const formattedDoctors = dummyDoctors.map((doctor, index) => ({
+            id: `doc-${index + 1}`,
+            name: doctor.name.replace('Dr. ', ''),
+            specialty: doctor.specialty,
+            rating: doctor.rating,
+            reviewCount: Math.floor(Math.random() * 100) + 50, // Random number of reviews between 50-150
+            location: doctor.location,
+            image: `https://images.unsplash.com/photo-${1590000000000 + index * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
+          }));
+          
+          setDoctors(formattedDoctors);
+        }
       } catch (error) {
-        console.error('Error fetching doctors:', error);
+        console.error('Error in doctor list component:', error);
       } finally {
         setIsLoading(false);
       }

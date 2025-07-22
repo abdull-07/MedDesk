@@ -17,17 +17,40 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // TODO: Replace with actual API calls
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
+
         const [statsResponse, activitiesResponse] = await Promise.all([
-          fetch('/api/admin/stats'),
-          fetch('/api/admin/recent-activities')
+          fetch('/api/admin/stats', { headers }),
+          fetch('/api/admin/recent-activities', { headers })
         ]);
+
+        if (!statsResponse.ok || !activitiesResponse.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
 
         const statsData = await statsResponse.json();
         const activitiesData = await activitiesResponse.json();
 
-        setStats(statsData);
-        setRecentActivities(activitiesData);
+        // Validate and set the stats data
+        setStats({
+          totalUsers: statsData.totalUsers || 0,
+          totalDoctors: statsData.totalDoctors || 0,
+          pendingVerifications: statsData.pendingVerifications || 0,
+          totalAppointments: statsData.totalAppointments || 0,
+          activeUsers: statsData.activeUsers || 0,
+          systemHealth: statsData.systemHealth || 100,
+        });
+
+        // Ensure recentActivities is always an array
+        setRecentActivities(Array.isArray(activitiesData) ? activitiesData : []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setError('Failed to load dashboard data');

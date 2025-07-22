@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
-import { FaCalendarPlus, FaUserMd, FaClipboardList, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaUserCircle, FaCalendarPlus, FaUserMd, FaClipboardList, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
+import dummyDoctors from '../../assets/doctors';
+import dummyAppointments from '../../assets/appointments';
 
 const Dashboard = () => {
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
@@ -16,13 +18,46 @@ const Dashboard = () => {
 
     const fetchDashboardData = async () => {
       try {
-        const [appointmentsRes, doctorsRes] = await Promise.all([
-          api.get('/appointments', { params: { status: 'upcoming' } }),
-          api.get('/doctors/recent')
-        ]);
+        // Try to fetch data, but handle 404 errors gracefully
+        let appointmentsData = [];
+        let doctorsData = [];
 
-        setUpcomingAppointments(appointmentsRes.data);
-        setRecentDoctors(doctorsRes.data);
+        try {
+          const appointmentsRes = await api.get('/appointments', { params: { status: 'upcoming' } });
+          appointmentsData = appointmentsRes.data;
+        } catch (appointmentError) {
+          console.log('Using dummy appointments data');
+          // Use dummy appointments data
+          appointmentsData = dummyAppointments.upcoming.slice(0, 5).map(apt => ({
+            _id: apt.id,
+            doctor: {
+              name: apt.doctor.replace('Dr. ', ''),
+              specialization: apt.specialty,
+              clinicName: apt.location
+            },
+            startTime: new Date(`${apt.date}T${apt.time.replace(' AM', ':00').replace(' PM', ':00')}`),
+            endTime: new Date(new Date(`${apt.date}T${apt.time.replace(' AM', ':00').replace(' PM', ':00')}`).getTime() + 30 * 60000),
+            status: apt.status.toLowerCase()
+          }));
+        }
+
+        try {
+          const doctorsRes = await api.get('/doctors/recent');
+          doctorsData = doctorsRes.data;
+        } catch (doctorsError) {
+          console.log('Using dummy doctors data');
+          // Use dummy doctors data
+          doctorsData = dummyDoctors.slice(0, 5).map((doc, index) => ({
+            _id: `doc-${index + 1}`,
+            name: doc.name.replace('Dr. ', ''),
+            specialization: doc.specialty,
+            clinicName: doc.location,
+            ratings: { average: doc.rating }
+          }));
+        }
+
+        setUpcomingAppointments(appointmentsData);
+        setRecentDoctors(doctorsData);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -51,7 +86,7 @@ const Dashboard = () => {
   );
 
   const DoctorCard = ({ doctor }) => (
-    <Link 
+    <Link
       to={`/patient/doctors/${doctor._id}`}
       className="flex items-center p-4 space-x-4 rounded-lg border border-gray-200 hover:border-[#006D77] bg-white hover:shadow-md transition-all duration-300"
     >
@@ -109,11 +144,10 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-            appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800'
-          }`}>
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+              appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+            }`}>
             {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
           </span>
         </div>
@@ -143,6 +177,12 @@ const Dashboard = () => {
       title: "Write Review",
       description: "Share your experience with doctors",
       to: "/patient/reviews"
+    },
+    {
+      icon: <FaUserCircle className="w-6 h-6" />,
+      title: "My Profile",
+      description: "View and update your personal information",
+      to: "/patient/profile"
     }
   ];
 

@@ -24,67 +24,6 @@ const userSchema = new mongoose.Schema({
     enum: ['patient', 'doctor', 'admin'],
     default: 'patient'
   },
-  phone: {
-    type: String,
-    trim: true
-  },
-  dateOfBirth: {
-    type: Date
-  },
-  gender: {
-    type: String,
-    enum: ['male', 'female', 'other']
-  },
-  bloodGroup: {
-    type: String,
-    enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
-  },
-  address: {
-    street: {
-      type: String,
-      trim: true
-    },
-    city: {
-      type: String,
-      trim: true
-    },
-    state: {
-      type: String,
-      trim: true
-    },
-    zipCode: {
-      type: String,
-      trim: true
-    }
-  },
-  emergencyContact: {
-    name: {
-      type: String,
-      trim: true
-    },
-    relationship: {
-      type: String,
-      trim: true
-    },
-    phone: {
-      type: String,
-      trim: true
-    }
-  },
-  medicalHistory: {
-    conditions: [{
-      type: String,
-      trim: true
-    }],
-    allergies: [{
-      type: String,
-      trim: true
-    }],
-    medications: [{
-      type: String,
-      trim: true
-    }]
-  },
   // Doctor specific fields
   specialization: {
     type: String,
@@ -140,9 +79,7 @@ const userSchema = new mongoose.Schema({
   consultationFee: {
     type: Number,
     min: 0,
-    required: function() {
-      return this.role === 'doctor';
-    }
+    default: 0
   },
   languages: [{
     type: String,
@@ -242,4 +179,4 @@ userSchema.methods.updateRating = async function(newRating) {
 
 const User = mongoose.model('User', userSchema);
 
-export default User; 
+export default User;

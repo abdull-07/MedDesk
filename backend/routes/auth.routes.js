@@ -14,6 +14,7 @@ const router = express.Router();
 // Admin routes
 router.post('/admin/login', adminLogin);
 
+
 // Doctor routes
 router.post('/doctor/register', registerDoctor);
 
