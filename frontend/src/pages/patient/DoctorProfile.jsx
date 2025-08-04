@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import api from '../../utils/api';
 
 const DoctorProfile = () => {
   const { id } = useParams();
   const [doctor, setDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
-  const [selectedSlot, setSelectedSlot] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [appointmentType, setAppointmentType] = useState('consultation');
+  const [reason, setReason] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -14,10 +19,36 @@ const DoctorProfile = () => {
   useEffect(() => {
     const fetchDoctorProfile = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch(`/api/doctors/${id}`);
-        const data = await response.json();
-        setDoctor(data);
+        // Use the specific doctor endpoint
+        const response = await api.get(`/doctors/${id}`);
+        const doctorData = response.data;
+        
+        if (!doctorData) {
+          setError('Doctor not found');
+          return;
+        }
+
+        // Transform the data to match frontend format
+        const formattedDoctor = {
+          id: doctorData._id,
+          name: doctorData.name,
+          specialty: doctorData.specialization,
+          rating: doctorData.ratings?.average || 0,
+          reviewCount: doctorData.ratings?.count || 0,
+          location: doctorData.location?.city ? 
+            `${doctorData.clinicName}, ${doctorData.location.city}` : 
+            doctorData.clinicName || 'Location not specified',
+          experience: doctorData.experience || 0,
+          consultationFee: doctorData.consultationFee || 100,
+          qualifications: doctorData.qualifications,
+          about: doctorData.about || 'No information available',
+          languages: doctorData.languages || [],
+          services: doctorData.services || [],
+          image: `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`,
+          reviews: [] // You can fetch reviews separately if needed
+        };
+        
+        setDoctor(formattedDoctor);
       } catch (error) {
         console.error('Error fetching doctor profile:', error);
         setError('Failed to load doctor profile');
@@ -29,9 +60,51 @@ const DoctorProfile = () => {
     fetchDoctorProfile();
   }, [id]);
 
+  // Fetch available slots when date is selected
+  useEffect(() => {
+    if (selectedDate && doctor) {
+      fetchAvailableSlots();
+    }
+  }, [selectedDate, doctor]);
+
+  const fetchAvailableSlots = async () => {
+    if (!selectedDate) return;
+    
+    setIsLoadingSlots(true);
+    setError('');
+    
+    try {
+      const response = await api.get(`/bookings/doctors/${id}/availability?date=${selectedDate}`);
+      const { slots } = response.data;
+      
+      // Format slots for display
+      const formattedSlots = slots.map(slot => ({
+        start: new Date(slot.start),
+        end: new Date(slot.end),
+        display: `${new Date(slot.start).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        })} - ${new Date(slot.end).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        })}`
+      }));
+      
+      setAvailableSlots(formattedSlots);
+    } catch (error) {
+      console.error('Error fetching available slots:', error);
+      setError('Failed to load available time slots');
+      setAvailableSlots([]);
+    } finally {
+      setIsLoadingSlots(false);
+    }
+  };
+
   const handleBookAppointment = async () => {
-    if (!selectedDate || !selectedSlot) {
-      setError('Please select both date and time slot');
+    if (!selectedDate || !selectedSlot || !reason.trim()) {
+      setError('Please fill in all required fields');
       return;
     }
 
@@ -39,27 +112,36 @@ const DoctorProfile = () => {
     setError('');
 
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          doctorId: id,
-          date: selectedDate,
-          timeSlot: selectedSlot,
-        }),
+      // Step 1: Initiate booking
+      const bookingData = {
+        doctorId: id,
+        startTime: selectedSlot.start.toISOString(),
+        endTime: selectedSlot.end.toISOString(),
+        type: appointmentType,
+        reason: reason.trim()
+      };
+
+      const initiateResponse = await api.post('/bookings/appointments/initiate', bookingData);
+      const { appointment, fee } = initiateResponse.data;
+
+      // Step 2: For now, we'll auto-confirm the booking
+      // In a real app, you'd integrate payment processing here
+      const confirmResponse = await api.post('/bookings/appointments/confirm', {
+        appointmentId: appointment._id,
+        paymentDetails: { method: 'cash', status: 'pending' } // Placeholder
       });
 
-      if (response.ok) {
+      if (confirmResponse.data) {
         setBookingSuccess(true);
-      } else {
-        const data = await response.json();
-        setError(data.message || 'Failed to book appointment');
+        // Reset form
+        setSelectedDate('');
+        setSelectedSlot(null);
+        setReason('');
+        setAvailableSlots([]);
       }
     } catch (error) {
-      setError('An error occurred while booking the appointment');
+      console.error('Booking error:', error);
+      setError(error.message || 'Failed to book appointment. Please try again.');
     } finally {
       setIsBooking(false);
     }
@@ -209,7 +291,15 @@ const DoctorProfile = () => {
           {/* Booking Section */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
-              <h2 className="text-xl font-semibold text-[#1D3557] mb-4">Book Appointment</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-[#1D3557]">Book Appointment</h2>
+                <Link
+                  to={`/patient/book-appointment/${id}`}
+                  className="text-sm text-[#006D77] hover:text-[#005A63] font-medium transition-colors"
+                >
+                  Full Booking Page →
+                </Link>
+              </div>
               
               {bookingSuccess ? (
                 <div className="text-center">
@@ -240,6 +330,38 @@ const DoctorProfile = () => {
                   )}
 
                   <div className="mb-4">
+                    <label htmlFor="appointmentType" className="block text-sm font-medium text-[#1D3557] mb-1">
+                      Appointment Type
+                    </label>
+                    <select
+                      id="appointmentType"
+                      value={appointmentType}
+                      onChange={(e) => setAppointmentType(e.target.value)}
+                      className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
+                      required
+                    >
+                      <option value="consultation">Consultation</option>
+                      <option value="follow-up">Follow-up</option>
+                      <option value="emergency">Emergency</option>
+                    </select>
+                  </div>
+
+                  <div className="mb-4">
+                    <label htmlFor="reason" className="block text-sm font-medium text-[#1D3557] mb-1">
+                      Reason for Visit
+                    </label>
+                    <textarea
+                      id="reason"
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Please describe your symptoms or reason for the appointment..."
+                      className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
+                      rows="3"
+                      required
+                    />
+                  </div>
+
+                  <div className="mb-4">
                     <label htmlFor="date" className="block text-sm font-medium text-[#1D3557] mb-1">
                       Select Date
                     </label>
@@ -255,28 +377,44 @@ const DoctorProfile = () => {
                   </div>
 
                   <div className="mb-6">
-                    <label htmlFor="slot" className="block text-sm font-medium text-[#1D3557] mb-1">
-                      Select Time Slot
+                    <label className="block text-sm font-medium text-[#1D3557] mb-2">
+                      Available Time Slots
                     </label>
-                    <select
-                      id="slot"
-                      value={selectedSlot}
-                      onChange={(e) => setSelectedSlot(e.target.value)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
-                      required
-                    >
-                      <option value="">Select a time slot</option>
-                      {doctor?.availableSlots?.map((slot) => (
-                        <option key={slot} value={slot}>
-                          {slot}
-                        </option>
-                      ))}
-                    </select>
+                    {!selectedDate ? (
+                      <p className="text-sm text-[#457B9D] italic">Please select a date first</p>
+                    ) : isLoadingSlots ? (
+                      <div className="flex items-center justify-center py-4">
+                        <svg className="animate-spin h-5 w-5 text-[#006D77]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="ml-2 text-sm text-[#457B9D]">Loading slots...</span>
+                      </div>
+                    ) : availableSlots.length === 0 ? (
+                      <p className="text-sm text-[#457B9D] italic">No available slots for this date</p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                        {availableSlots.map((slot, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`p-2 text-sm rounded-lg border transition-colors duration-200 ${
+                              selectedSlot === slot
+                                ? 'bg-[#006D77] text-white border-[#006D77]'
+                                : 'bg-white text-[#1D3557] border-gray-300 hover:border-[#006D77] hover:bg-[#F1FAEE]'
+                            }`}
+                          >
+                            {slot.display}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <button
                     type="submit"
-                    disabled={isBooking}
+                    disabled={isBooking || !selectedSlot || !reason.trim()}
                     className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-[#006D77] hover:bg-[#005A63] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#83C5BE] disabled:opacity-50 transition-all duration-300 shadow-md hover:shadow-lg"
                   >
                     {isBooking ? (

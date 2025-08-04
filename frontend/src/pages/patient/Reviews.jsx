@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import dummyReviews from '../../assets/reviews';
-import dummyDoctors from '../../assets/doctors';
+import api from '../../utils/api';
 
 const Reviews = () => {
   const [searchParams] = useSearchParams();
@@ -29,13 +29,6 @@ const Reviews = () => {
           
           // Process the dummy reviews data
           const formattedReviews = dummyReviews.map(review => {
-            // Find the doctor in the dummy doctors data
-            const doctor = dummyDoctors.find(doc => doc.name === review.doctor) || {
-              name: review.doctor.replace('Dr. ', ''),
-              specialty: 'Specialist',
-              location: 'Medical Center'
-            };
-            
             return {
               id: review.id,
               rating: review.rating,
@@ -43,8 +36,8 @@ const Reviews = () => {
               date: review.date,
               doctor: {
                 id: review.id.replace('rev-', 'doc-'),
-                name: doctor.name.replace('Dr. ', ''),
-                specialty: doctor.specialty,
+                name: review.doctor.replace('Dr. ', ''),
+                specialty: 'Specialist',
                 image: `https://images.unsplash.com/photo-${1590000000000 + parseInt(review.id.split('-')[1]) * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80`
               },
               patient: review.patient
@@ -107,10 +100,6 @@ const Reviews = () => {
           const user = JSON.parse(localStorage.getItem('user') || '{}');
           const patientName = user.name || 'Patient';
           
-          // Find the doctor from the doctorId
-          const doctorIdNum = parseInt(doctorId.replace('doc-', ''));
-          const doctor = dummyDoctors[doctorIdNum % dummyDoctors.length];
-          
           const newReview = {
             id: `rev-${dummyReviews.length + 1}`,
             rating: rating,
@@ -118,8 +107,8 @@ const Reviews = () => {
             date: new Date().toISOString().split('T')[0],
             doctor: {
               id: doctorId,
-              name: doctor ? doctor.name.replace('Dr. ', '') : 'Doctor',
-              specialty: doctor ? doctor.specialty : 'Specialist',
+              name: 'Doctor',
+              specialty: 'Specialist',
               image: `https://images.unsplash.com/photo-${1590000000000 + (dummyReviews.length + 1) * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80`
             },
             patient: patientName

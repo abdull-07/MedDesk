@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import dummyDoctors from '../../assets/doctors';
+import api from '../../utils/api';
 
 const DoctorsList = () => {
   const [doctors, setDoctors] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
+  const [specializations, setSpecializations] = useState([]);
   const [filters, setFilters] = useState({
     availability: '',
     gender: '',
@@ -14,78 +15,137 @@ const DoctorsList = () => {
     rating: '',
   });
 
-  const specialties = [
-    'Cardiology',
-    'Dermatology',
-    'Endocrinology',
-    'Family Medicine',
-    'Gastroenterology',
-    'Neurology',
-    'Obstetrics',
-    'Ophthalmology',
-    'Orthopedics',
-    'Pediatrics',
-    'Psychiatry',
-    'Urology'
-  ];
-
   useEffect(() => {
-    const fetchDoctors = async () => {
+    const fetchInitialData = async () => {
       try {
-        // Try to fetch data from API, but use dummy data if endpoint doesn't exist yet
-        try {
-          const response = await fetch('/api/doctors');
-          const data = await response.json();
-          setDoctors(data);
-        } catch (apiError) {
-          console.log('Doctors API endpoint not available yet, using dummy data');
-          
-          // Process the dummy doctors data to match the expected format
-          const formattedDoctors = dummyDoctors.map((doctor, index) => ({
-            id: `doc-${index + 1}`,
-            name: doctor.name.replace('Dr. ', ''),
-            specialty: doctor.specialty,
-            rating: doctor.rating,
-            reviewCount: Math.floor(Math.random() * 100) + 50, // Random number of reviews between 50-150
-            location: doctor.location,
-            image: `https://images.unsplash.com/photo-${1590000000000 + index * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
-          }));
-          
-          setDoctors(formattedDoctors);
-        }
+        // Fetch specializations and doctors in parallel
+        const [specializationsResponse, doctorsResponse] = await Promise.all([
+          api.get('/doctors/specializations'),
+          api.get('/doctors/search')
+        ]);
+
+        setSpecializations(specializationsResponse.data || []);
+
+        const { doctors } = doctorsResponse.data;
+
+        // Transform the backend data to match the frontend format
+        const formattedDoctors = doctors.map((doctor) => ({
+          id: doctor._id,
+          name: doctor.name,
+          specialty: doctor.specialization,
+          rating: doctor.ratings?.average || 0,
+          reviewCount: doctor.ratings?.count || 0,
+          location: doctor.location?.city ?
+            `${doctor.clinicName}, ${doctor.location.city}` :
+            doctor.clinicName || 'Location not specified',
+          gender: doctor.gender || 'Not specified',
+          experience: doctor.experience || 0,
+          consultationFee: doctor.consultationFee || 0,
+          qualifications: doctor.qualifications,
+          about: doctor.about,
+          languages: doctor.languages || [],
+          services: doctor.services || [],
+          image: `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
+        }));
+
+        setDoctors(formattedDoctors);
       } catch (error) {
-        console.error('Error in doctor list component:', error);
+        console.error('Error fetching data:', error);
+        // You can add error handling here, maybe show a toast notification
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchDoctors();
+    fetchInitialData();
   }, []);
 
+  // Debounced search function to avoid too many API calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm || selectedSpecialty || filters.rating || filters.experience) {
+        fetchFilteredDoctors();
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, selectedSpecialty, filters]);
+
+  const fetchFilteredDoctors = async () => {
+    try {
+      setIsLoading(true);
+      const params = new URLSearchParams();
+
+      if (searchTerm) params.append('search', searchTerm);
+      if (selectedSpecialty) params.append('specialization', selectedSpecialty);
+      if (filters.rating) {
+        const minRating = filters.rating === '4+ Stars' ? 4 : 3;
+        params.append('minRating', minRating);
+      }
+      if (filters.experience) {
+        if (filters.experience === '0-5 years') params.append('maxExperience', 5);
+        else if (filters.experience === '5-10 years') {
+          params.append('minExperience', 5);
+          params.append('maxExperience', 10);
+        }
+        else if (filters.experience === '10+ years') params.append('minExperience', 10);
+      }
+
+      const response = await api.get(`/doctors/search?${params.toString()}`);
+      const { doctors } = response.data;
+
+      const formattedDoctors = doctors.map((doctor) => ({
+        id: doctor._id,
+        name: doctor.name,
+        specialty: doctor.specialization,
+        rating: doctor.ratings?.average || 0,
+        reviewCount: doctor.ratings?.count || 0,
+        location: doctor.location?.city ?
+          `${doctor.clinicName}, ${doctor.location.city}` :
+          doctor.clinicName || 'Location not specified',
+        gender: doctor.gender || 'Not specified',
+        experience: doctor.experience || 0,
+        consultationFee: doctor.consultationFee || 0,
+        qualifications: doctor.qualifications,
+        about: doctor.about,
+        languages: doctor.languages || [],
+        services: doctor.services || [],
+        image: `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
+      }));
+
+      setDoctors(formattedDoctors);
+    } catch (error) {
+      console.error('Error fetching filtered doctors:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+
   const DoctorCard = ({ doctor }) => (
-    <Link
-      to={`/doctors/${doctor.id}`}
-      className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden"
-    >
+    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
       <div className="aspect-w-3 aspect-h-2">
         <img
           src={doctor.image}
-          alt={`Dr. ${doctor.name}`}
+          alt={`${doctor.name}`}
           className="object-cover w-full h-48"
         />
       </div>
       <div className="p-4">
-        <h3 className="text-lg font-semibold text-[#1D3557] mb-1">Dr. {doctor.name}</h3>
+        <Link to={`/patient/doctors/${doctor.id}`}>
+          <h3 className="text-lg font-semibold text-[#1D3557] mb-1 hover:text-[#006D77] transition-colors">
+             {doctor.name}
+          </h3>
+        </Link>
         <p className="text-[#457B9D] text-sm mb-2">{doctor.specialty}</p>
         <div className="flex items-center mb-2">
           <div className="flex items-center">
             {[...Array(5)].map((_, i) => (
               <svg
                 key={i}
-                className={`w-4 h-4 ${
-                  i < doctor.rating ? 'text-yellow-400' : 'text-gray-300'
-                }`}
+                className={`w-4 h-4 ${i < doctor.rating ? 'text-yellow-400' : 'text-gray-300'
+                  }`}
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -97,15 +157,26 @@ const DoctorsList = () => {
             ({doctor.reviewCount} reviews)
           </span>
         </div>
-        <div className="flex items-center text-sm text-[#457B9D]">
+        <div className="flex items-center text-sm text-[#457B9D] mb-3">
           <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
           {doctor.location}
         </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-[#006D77]">
+            ${doctor.consultationFee}
+          </span>
+          <Link
+            to={`/patient/book-appointment/${doctor.id}`}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-[#006D77] hover:bg-[#005A63] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#83C5BE] transition-colors duration-200"
+          >
+            Book Now
+          </Link>
+        </div>
       </div>
-    </Link>
+    </div>
   );
 
   const FilterSection = ({ title, options, value, onChange }) => (
@@ -158,7 +229,7 @@ const DoctorsList = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h2 className="text-lg font-semibold text-[#1D3557] mb-4">Filters</h2>
-              
+
               {/* Search */}
               <div className="mb-4">
                 <label htmlFor="search" className="sr-only">Search doctors</label>
@@ -182,7 +253,7 @@ const DoctorsList = () => {
               {/* Specialty Filter */}
               <FilterSection
                 title="Specialty"
-                options={specialties}
+                options={specializations}
                 value={selectedSpecialty}
                 onChange={setSelectedSpecialty}
               />

@@ -20,7 +20,10 @@ export const adminLogin = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Email and password are required' 
+      });
     }
 
     // Check if any admin exists in the system
@@ -29,22 +32,35 @@ export const adminLogin = async (req, res) => {
     if (!adminExists) {
       // First time login - check against environment variables
       if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(401).json({ 
+          success: false,
+          message: 'Invalid credentials for first-time admin setup' 
+        });
       }
 
-      // Create new admin in database
+      // Create new admin in database with hashed password
       const newAdmin = new Admin({
         email: process.env.ADMIN_EMAIL,
-        password: process.env.ADMIN_PASSWORD
+        password: process.env.ADMIN_PASSWORD // Password will be hashed by the pre-save middleware
       });
 
       await newAdmin.save();
 
-      const token = generateToken({ _id: newAdmin._id, role: 'admin', isVerified: true });
+      const token = generateToken({ 
+        id: newAdmin._id, 
+        role: 'admin',
+        isVerified: true 
+      });
 
       return res.json({
+        success: true,
         message: 'Admin account created and logged in successfully',
-        token
+        token,
+        admin: {
+          id: newAdmin._id,
+          email: newAdmin.email,
+          role: newAdmin.role
+        }
       });
     }
 
@@ -52,21 +68,37 @@ export const adminLogin = async (req, res) => {
     const admin = await Admin.findOne({ email });
 
     if (!admin) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
     }
 
     // Check password
     const isValidPassword = await admin.comparePassword(password);
 
     if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
     }
 
-    const token = generateToken({ _id: admin._id, role: 'admin', isVerified: true });
+    const token = generateToken({ 
+      id: admin._id, 
+      role: 'admin',
+      isVerified: true 
+    });
 
     res.json({
+      success: true,
       message: 'Logged in successfully',
-      token
+      token,
+      admin: {
+        id: admin._id,
+        email: admin.email,
+        role: admin.role
+      }
     });
 
   } catch (error) {
@@ -559,6 +591,15 @@ export const getProfile = async (req, res) => {
       const doctorProfile = await Doctor.findOne({ userId: user._id }).lean();
       
       if (doctorProfile) {
+        // Convert availability Map to plain object if it exists
+        if (doctorProfile.availability && doctorProfile.availability instanceof Map) {
+          const availabilityObj = {};
+          doctorProfile.availability.forEach((value, key) => {
+            availabilityObj[key] = value;
+          });
+          doctorProfile.availability = availabilityObj;
+        }
+        
         // Merge user and doctor data
         profile = {
           ...user,

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../utils/api';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -25,20 +26,14 @@ const AdminLogin = () => {
 
     try {
       // Make API call to the admin login endpoint
-      const response = await fetch('/api/admin/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await api.post('/auth/admin/login', formData);
+      const { data } = response;
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store the token and admin flag
+      if (data.success) {
+        // Store the token and admin info
         localStorage.setItem('token', data.token);
         localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('user', JSON.stringify(data.admin));
         
         // Redirect to admin dashboard
         navigate('/admin/dashboard');

@@ -1,68 +1,79 @@
 import User from '../models/user.model.js';
+import Doctor from '../models/doctor.model.js';
 import Appointment from '../models/appointment.model.js';
 import availabilityService from '../services/availability.service.js';
+import DoctorService from '../services/doctor.service.js';
 
 // Search doctors with filters
 export const searchDoctors = async (req, res) => {
   try {
     const {
       specialization,
-      name,
+      search,
       clinicLocation,
       sortBy,
       page = 1,
       limit = 10
     } = req.query;
 
-    const query = {
-      role: 'doctor',
-      isVerified: true
+    // Use the DoctorService to search doctors
+    const filters = {
+      specialization,
+      search,
+      location: clinicLocation,
+      sortBy
     };
 
-    // Apply filters
-    if (specialization) {
-      query.specialization = specialization;
-    }
-    if (name) {
-      query.name = { $regex: name, $options: 'i' };
-    }
-    if (clinicLocation) {
-      query.clinicName = { $regex: clinicLocation, $options: 'i' };
-    }
+    const options = {
+      page,
+      limit
+    };
 
-    // Prepare sort options
-    let sortOptions = {};
-    if (sortBy === 'experience') {
-      sortOptions.experience = -1;
-    } else if (sortBy === 'name') {
-      sortOptions.name = 1;
-    }
-
-    // Calculate pagination
-    const skip = (page - 1) * limit;
-
-    // Get doctors
-    const doctors = await User.find(query)
-      .select('-password')
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit);
-
-    // Get total count for pagination
-    const total = await User.countDocuments(query);
+    const result = await DoctorService.searchDoctors(filters, options);
 
     res.json({
-      doctors,
+      doctors: result.doctors,
       pagination: {
-        total,
-        pages: Math.ceil(total / limit),
-        currentPage: page,
+        total: result.total,
+        pages: result.totalPages,
+        currentPage: result.page,
         perPage: limit
       }
     });
 
   } catch (error) {
     console.error('Search doctors error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Get doctor profile by user ID
+export const getDoctorByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find doctor profile by user ID
+    const doctor = await Doctor.findOne({ userId });
+
+    if (!doctor) {
+      return res.status(404).json({
+        message: 'Doctor profile not found'
+      });
+    }
+
+    // Get the full doctor profile using DoctorService
+    const doctorProfile = await DoctorService.getDoctorById(doctor._id);
+
+    if (!doctorProfile) {
+      return res.status(404).json({
+        message: 'Doctor not found or not verified'
+      });
+    }
+
+    res.json(doctorProfile);
+
+  } catch (error) {
+    console.error('Get doctor by user ID error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -79,12 +90,8 @@ export const getDoctorAvailability = async (req, res) => {
       });
     }
 
-    // Validate doctor exists and is verified
-    const doctor = await User.findOne({
-      _id: id,
-      role: 'doctor',
-      isVerified: true
-    });
+    // Validate doctor exists and is verified using DoctorService
+    const doctor = await DoctorService.getDoctorById(id);
 
     if (!doctor) {
       return res.status(404).json({
@@ -112,12 +119,8 @@ export const getNextAvailable = async (req, res) => {
     const { id } = req.params;
     const { fromDate } = req.query;
 
-    // Validate doctor exists and is verified
-    const doctor = await User.findOne({
-      _id: id,
-      role: 'doctor',
-      isVerified: true
-    });
+    // Validate doctor exists and is verified using DoctorService
+    const doctor = await DoctorService.getDoctorById(id);
 
     if (!doctor) {
       return res.status(404).json({
@@ -159,12 +162,8 @@ export const initiateBooking = async (req, res) => {
       });
     }
 
-    // Validate doctor exists and is verified
-    const doctor = await User.findOne({
-      _id: doctorId,
-      role: 'doctor',
-      isVerified: true
-    });
+    // Validate doctor exists and is verified using DoctorService
+    const doctor = await DoctorService.getDoctorById(doctorId);
 
     if (!doctor) {
       return res.status(404).json({
@@ -189,10 +188,10 @@ export const initiateBooking = async (req, res) => {
     const duration = (new Date(endTime) - new Date(startTime)) / (1000 * 60); // in minutes
     const fee = Math.ceil(duration / 30) * doctor.consultationFee || 100; // Default fee if not set
 
-    // Create temporary appointment
+    // Create temporary appointment - use the user ID, not the doctor profile ID
     const appointment = new Appointment({
       patient: req.user.id,
-      doctor: doctorId,
+      doctor: doctor.userId, // Use the userId from the doctor profile
       startTime: new Date(startTime),
       endTime: new Date(endTime),
       type,
@@ -241,9 +240,17 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
+    // Get the doctor profile ID from the user ID
+    const doctorProfile = await Doctor.findOne({ userId: appointment.doctor }).lean();
+    if (!doctorProfile) {
+      return res.status(404).json({
+        message: 'Doctor profile not found'
+      });
+    }
+
     // Verify slot is still available
     const isAvailable = await availabilityService.isSlotAvailable(
-      appointment.doctor,
+      doctorProfile._id,
       appointment.startTime,
       appointment.endTime
     );
@@ -295,9 +302,17 @@ export const rescheduleAppointment = async (req, res) => {
       });
     }
 
+    // Get the doctor profile ID from the user ID
+    const doctorProfile = await Doctor.findOne({ userId: appointment.doctor }).lean();
+    if (!doctorProfile) {
+      return res.status(404).json({
+        message: 'Doctor profile not found'
+      });
+    }
+
     // Check if new slot is available
     const isAvailable = await availabilityService.isSlotAvailable(
-      appointment.doctor,
+      doctorProfile._id,
       new Date(startTime),
       new Date(endTime),
       id // Exclude current appointment from conflict check

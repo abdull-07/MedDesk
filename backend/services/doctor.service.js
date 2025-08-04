@@ -1,4 +1,6 @@
+import mongoose from 'mongoose';
 import User from '../models/user.model.js';
+import Doctor from '../models/doctor.model.js';
 import Schedule from '../models/schedule.model.js';
 import Appointment from '../models/appointment.model.js';
 
@@ -14,7 +16,7 @@ class DoctorService {
         languages,
         location,
         availableOn,
-        sortBy = 'ratings'
+        sortBy = 'experience'
       } = filters;
 
       const {
@@ -23,50 +25,35 @@ class DoctorService {
         coordinates
       } = options;
 
-      // Base query
-      const query = {
-        role: 'doctor',
-        isVerified: true
-      };
+      // Build aggregation pipeline
+      const pipeline = [];
 
-      // Text search
-      if (search) {
-        query.$text = { $search: search };
-      }
+      // Match stage - filter doctors
+      const matchStage = {};
 
       // Specialization filter
       if (specialization) {
-        query.specialization = specialization;
-      }
-
-      // Rating filter
-      if (minRating) {
-        query['ratings.average'] = { $gte: parseFloat(minRating) };
+        matchStage.specialization = specialization;
       }
 
       // Experience filter
       if (minExperience) {
-        query.experience = { $gte: parseInt(minExperience) };
+        matchStage.experience = { $gte: parseInt(minExperience) };
       }
 
       // Consultation fee filter
       if (maxFee) {
-        query.consultationFee = { $lte: parseFloat(maxFee) };
-      }
-
-      // Languages filter
-      if (languages && languages.length > 0) {
-        query.languages = { $in: languages };
+        matchStage.consultationFee = { $lte: parseFloat(maxFee) };
       }
 
       // Location filter
       if (location) {
-        query['location.city'] = location;
+        matchStage['location.city'] = location;
       }
 
       // Geospatial search if coordinates provided
       if (coordinates && coordinates.length === 2) {
-        query['location.coordinates'] = {
+        matchStage['location.coordinates'] = {
           $near: {
             $geometry: {
               type: 'Point',
@@ -77,75 +64,148 @@ class DoctorService {
         };
       }
 
-      // Availability filter
-      let availableDoctorIds = [];
-      if (availableOn) {
-        const date = new Date(availableOn);
-        const dayOfWeek = date.getDay();
-        const timeStr = date.toTimeString().slice(0, 5); // HH:mm format
+      pipeline.push({ $match: matchStage });
 
-        // Find doctors available at the specified time
-        const schedules = await Schedule.find({
-          'recurringSchedule': {
-            $elemMatch: {
-              dayOfWeek,
-              startTime: { $lte: timeStr },
-              endTime: { $gt: timeStr },
-              isWorkingDay: true
-            }
+      // Lookup stage - join with users collection
+      pipeline.push({
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      });
+
+      // Unwind the user array
+      pipeline.push({ $unwind: '$user' });
+
+      // Match verified users only
+      pipeline.push({
+        $match: {
+          'user.role': 'doctor',
+          'user.isVerified': true
+        }
+      });
+
+      // Text search on user name if provided
+      if (search) {
+        pipeline.push({
+          $match: {
+            $or: [
+              { 'user.name': { $regex: search, $options: 'i' } },
+              { specialization: { $regex: search, $options: 'i' } },
+              { clinicName: { $regex: search, $options: 'i' } }
+            ]
           }
         });
+      }
 
-        // Check for appointments
-        const busyDoctors = await Appointment.find({
-          startTime: { $lte: date },
-          endTime: { $gt: date },
-          status: 'scheduled'
-        }).distinct('doctor');
-
-        availableDoctorIds = schedules
-          .map(s => s.doctor.toString())
-          .filter(id => !busyDoctors.includes(id));
-
-        if (availableDoctorIds.length > 0) {
-          query._id = { $in: availableDoctorIds };
-        } else {
-          return { doctors: [], total: 0, page: 1, totalPages: 0 };
+      // Add computed fields
+      pipeline.push({
+        $addFields: {
+          // Add ratings field (you can implement this based on reviews)
+          ratings: {
+            average: 4.5, // Default rating - you can calculate from reviews
+            count: 0
+          }
         }
+      });
+
+      // Rating filter
+      if (minRating) {
+        pipeline.push({
+          $match: {
+            'ratings.average': { $gte: parseFloat(minRating) }
+          }
+        });
       }
 
       // Sorting
-      let sortOptions = {};
+      let sortStage = {};
       switch (sortBy) {
         case 'ratings':
-          sortOptions = { 'ratings.average': -1 };
+          sortStage = { 'ratings.average': -1 };
           break;
         case 'experience':
-          sortOptions = { experience: -1 };
+          sortStage = { experience: -1 };
           break;
         case 'fee':
-          sortOptions = { consultationFee: 1 };
+          sortStage = { consultationFee: 1 };
+          break;
+        case 'name':
+          sortStage = { 'user.name': 1 };
           break;
         default:
-          sortOptions = { 'ratings.average': -1 };
+          sortStage = { experience: -1 };
       }
 
-      // If there's a text search, sort by text score first
-      if (search) {
-        sortOptions = { score: { $meta: 'textScore' }, ...sortOptions };
-      }
+      pipeline.push({ $sort: sortStage });
 
-      // Execute query with pagination
+      // Pagination
       const skip = (page - 1) * limit;
-      
-      const [doctors, total] = await Promise.all([
-        User.find(query)
-          .select('-password')
-          .sort(sortOptions)
-          .skip(skip)
-          .limit(limit),
-        User.countDocuments(query)
+      pipeline.push({ $skip: skip });
+      pipeline.push({ $limit: parseInt(limit) });
+
+      // Project final structure
+      pipeline.push({
+        $project: {
+          _id: 1,
+          userId: 1,
+          name: '$user.name',
+          email: '$user.email',
+          specialization: 1,
+          qualifications: 1,
+          experience: 1,
+          licenseNumber: 1,
+          clinicName: 1,
+          consultationFee: 1,
+          services: 1,
+          education: 1,
+          certifications: 1,
+          about: 1,
+          location: 1,
+          contactInfo: 1,
+          availability: 1,
+          ratings: 1,
+          createdAt: 1,
+          updatedAt: 1
+        }
+      });
+
+      // Execute aggregation
+      const [doctors, totalResult] = await Promise.all([
+        Doctor.aggregate(pipeline),
+        Doctor.aggregate([
+          { $match: matchStage },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'userId',
+              foreignField: '_id',
+              as: 'user'
+            }
+          },
+          { $unwind: '$user' },
+          {
+            $match: {
+              'user.role': 'doctor',
+              'user.isVerified': true
+            }
+          },
+          ...(search ? [{
+            $match: {
+              $or: [
+                { 'user.name': { $regex: search, $options: 'i' } },
+                { specialization: { $regex: search, $options: 'i' } },
+                { clinicName: { $regex: search, $options: 'i' } }
+              ]
+            }
+          }] : []),
+          { $count: 'total' }
+        ])
       ]);
+
+      const total = totalResult.length > 0 ? totalResult[0].total : 0;
 
       return {
         doctors,
@@ -162,11 +222,34 @@ class DoctorService {
 
   static async getSpecializations() {
     try {
-      return await User.distinct('specialization', {
-        role: 'doctor',
-        isVerified: true,
-        specialization: { $ne: null }
-      });
+      // Get specializations from doctors collection, but only for verified users
+      const pipeline = [
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user'
+          }
+        },
+        { $unwind: '$user' },
+        {
+          $match: {
+            'user.role': 'doctor',
+            'user.isVerified': true,
+            specialization: { $ne: null }
+          }
+        },
+        {
+          $group: {
+            _id: '$specialization'
+          }
+        },
+        { $sort: { _id: 1 } }
+      ];
+
+      const result = await Doctor.aggregate(pipeline);
+      return result.map(item => item._id);
     } catch (error) {
       console.error('Get specializations error:', error);
       throw error;
@@ -175,11 +258,35 @@ class DoctorService {
 
   static async getLanguages() {
     try {
-      return await User.distinct('languages', {
-        role: 'doctor',
-        isVerified: true,
-        languages: { $ne: [] }
-      });
+      // Get languages from users collection for verified doctors
+      const pipeline = [
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user'
+          }
+        },
+        { $unwind: '$user' },
+        {
+          $match: {
+            'user.role': 'doctor',
+            'user.isVerified': true,
+            'user.languages': { $exists: true, $ne: [] }
+          }
+        },
+        { $unwind: '$user.languages' },
+        {
+          $group: {
+            _id: '$user.languages'
+          }
+        },
+        { $sort: { _id: 1 } }
+      ];
+
+      const result = await Doctor.aggregate(pipeline);
+      return result.map(item => item._id);
     } catch (error) {
       console.error('Get languages error:', error);
       throw error;
@@ -188,13 +295,98 @@ class DoctorService {
 
   static async getCities() {
     try {
-      return await User.distinct('location.city', {
-        role: 'doctor',
-        isVerified: true,
-        'location.city': { $ne: null }
-      });
+      // Get cities from doctors collection, but only for verified users
+      const pipeline = [
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user'
+          }
+        },
+        { $unwind: '$user' },
+        {
+          $match: {
+            'user.role': 'doctor',
+            'user.isVerified': true,
+            'location.city': { $ne: null, $exists: true }
+          }
+        },
+        {
+          $group: {
+            _id: '$location.city'
+          }
+        },
+        { $sort: { _id: 1 } }
+      ];
+
+      const result = await Doctor.aggregate(pipeline);
+      return result.map(item => item._id);
     } catch (error) {
       console.error('Get cities error:', error);
+      throw error;
+    }
+  }
+
+  static async getDoctorById(doctorId) {
+    try {
+      const pipeline = [
+        { $match: { _id: new mongoose.Types.ObjectId(doctorId) } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user'
+          }
+        },
+        { $unwind: '$user' },
+        {
+          $match: {
+            'user.role': 'doctor',
+            'user.isVerified': true
+          }
+        },
+        {
+          $addFields: {
+            // Add ratings field (you can implement this based on reviews)
+            ratings: {
+              average: 4.5, // Default rating - you can calculate from reviews
+              count: 0
+            }
+          }
+        },
+        {
+          $project: {
+            _id: 1,
+            userId: 1,
+            name: '$user.name',
+            email: '$user.email',
+            specialization: 1,
+            qualifications: 1,
+            experience: 1,
+            licenseNumber: 1,
+            clinicName: 1,
+            consultationFee: 1,
+            services: 1,
+            education: 1,
+            certifications: 1,
+            about: 1,
+            location: 1,
+            contactInfo: 1,
+            availability: 1,
+            ratings: 1,
+            createdAt: 1,
+            updatedAt: 1
+          }
+        }
+      ];
+
+      const result = await Doctor.aggregate(pipeline);
+      return result.length > 0 ? result[0] : null;
+    } catch (error) {
+      console.error('Get doctor by ID error:', error);
       throw error;
     }
   }

@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { FaUserCircle, FaCalendarPlus, FaUserMd, FaClipboardList, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
-import dummyDoctors from '../../assets/doctors';
-import dummyAppointments from '../../assets/appointments';
 
 const Dashboard = () => {
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
@@ -23,37 +21,31 @@ const Dashboard = () => {
         let doctorsData = [];
 
         try {
-          const appointmentsRes = await api.get('/appointments', { params: { status: 'upcoming' } });
-          appointmentsData = appointmentsRes.data;
+          const appointmentsRes = await api.get('/appointments');
+          // Filter for upcoming appointments and limit to 5
+          const now = new Date();
+          appointmentsData = appointmentsRes.data
+            .filter(apt => new Date(apt.startTime) > now && apt.status !== 'cancelled')
+            .slice(0, 5);
         } catch (appointmentError) {
-          console.log('Using dummy appointments data');
-          // Use dummy appointments data
-          appointmentsData = dummyAppointments.upcoming.slice(0, 5).map(apt => ({
-            _id: apt.id,
-            doctor: {
-              name: apt.doctor.replace('Dr. ', ''),
-              specialization: apt.specialty,
-              clinicName: apt.location
-            },
-            startTime: new Date(`${apt.date}T${apt.time.replace(' AM', ':00').replace(' PM', ':00')}`),
-            endTime: new Date(new Date(`${apt.date}T${apt.time.replace(' AM', ':00').replace(' PM', ':00')}`).getTime() + 30 * 60000),
-            status: apt.status.toLowerCase()
-          }));
+          console.error('Error fetching appointments:', appointmentError);
+          appointmentsData = [];
         }
 
         try {
-          const doctorsRes = await api.get('/doctors/recent');
-          doctorsData = doctorsRes.data;
-        } catch (doctorsError) {
-          console.log('Using dummy doctors data');
-          // Use dummy doctors data
-          doctorsData = dummyDoctors.slice(0, 5).map((doc, index) => ({
-            _id: `doc-${index + 1}`,
-            name: doc.name.replace('Dr. ', ''),
-            specialization: doc.specialty,
-            clinicName: doc.location,
-            ratings: { average: doc.rating }
+          const doctorsRes = await api.get('/patient/doctors');
+          const { doctors } = doctorsRes.data;
+          // Take first 5 doctors for the dashboard
+          doctorsData = doctors.slice(0, 5).map(doctor => ({
+            _id: doctor._id,
+            name: doctor.name,
+            specialization: doctor.specialization,
+            clinicName: doctor.clinicName,
+            ratings: doctor.ratings
           }));
+        } catch (doctorsError) {
+          console.log('Error fetching doctors:', doctorsError);
+          doctorsData = [];
         }
 
         setUpcomingAppointments(appointmentsData);
@@ -145,8 +137,8 @@ const Dashboard = () => {
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-              appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
+            appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
             }`}>
             {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
           </span>

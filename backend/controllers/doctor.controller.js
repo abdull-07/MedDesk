@@ -82,4 +82,22 @@ export const getCities = async (req, res) => {
     console.error('Get cities error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+// Get doctor by ID
+export const getDoctorById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const doctor = await DoctorService.getDoctorById(id);
+    
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+    
+    res.json(doctor);
+  } catch (error) {
+    console.error('Get doctor by ID error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 }; 

@@ -7,6 +7,7 @@ import {
   getAppointmentById,
   updateAppointment,
   cancelAppointment,
+  rescheduleAppointment,
   getDoctorSchedule
 } from '../controllers/appointment.controller.js';
 
@@ -14,7 +15,7 @@ const router = express.Router();
 
 // Create appointment (patients only)
 router.post(
-  '/appointments',
+  '/',
   authenticateToken,
   roleCheck(['patient']),
   createAppointment
@@ -22,21 +23,21 @@ router.post(
 
 // Get all appointments (filtered by role)
 router.get(
-  '/appointments',
+  '/',
   authenticateToken,
   getAppointments
 );
 
 // Get specific appointment
 router.get(
-  '/appointments/:id',
+  '/:id',
   authenticateToken,
   getAppointmentById
 );
 
 // Update appointment (doctors only)
 router.put(
-  '/appointments/:id',
+  '/:id',
   authenticateToken,
   roleCheck(['doctor']),
   updateAppointment
@@ -44,10 +45,18 @@ router.put(
 
 // Cancel appointment (both patient and doctor)
 router.post(
-  '/appointments/:id/cancel',
+  '/:id/cancel',
   authenticateToken,
   roleCheck(['patient', 'doctor']),
   cancelAppointment
+);
+
+// Reschedule appointment (both patient and doctor)
+router.post(
+  '/:id/reschedule',
+  authenticateToken,
+  roleCheck(['patient', 'doctor']),
+  rescheduleAppointment
 );
 
 // Get doctor's schedule (available and booked slots)

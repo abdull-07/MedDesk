@@ -8,19 +8,13 @@ const ProtectedRoute = ({
 }) => {
   const { currentUser } = useAuth();
   
-  // Check if there's a pending doctor verification
+  // Clear any pending user data if current user is authenticated and verified
   useEffect(() => {
-    const pendingUser = localStorage.getItem('pendingUser');
-    if (pendingUser) {
-      const user = JSON.parse(pendingUser);
-      if (user.role === 'doctor' && !user.isVerified) {
-        // If we're not already on the verification pending page, redirect there
-        if (window.location.pathname !== '/verification-pending') {
-          window.location.href = '/verification-pending';
-        }
-      }
+    if (currentUser && currentUser.isVerified) {
+      // Clear pending user data since user is now authenticated and verified
+      localStorage.removeItem('pendingUser');
     }
-  }, []);
+  }, [currentUser]);
   
   // Check if user is authenticated
   if (!currentUser) {

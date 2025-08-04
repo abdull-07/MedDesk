@@ -49,7 +49,7 @@ const Navbar = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
-    
+
     if (token && userData) {
       try {
         const parsedUser = JSON.parse(userData);
@@ -88,7 +88,7 @@ const Navbar = () => {
     { to: '/doctor/appointments', label: 'Appointments' },
     { to: '/doctor/schedule', label: 'Schedule' },
     { to: '/doctor/patients', label: 'Patients' },
-    { to: '/doctor/profile', label: 'Profile' }
+    // { to: '/doctor/profile', label: 'Profile' }
   ];
 
   // Navbar for patients
@@ -97,7 +97,7 @@ const Navbar = () => {
     { to: '/patient/doctors', label: 'Find Doctors' },
     { to: '/patient/appointments', label: 'My Appointments' },
     { to: '/patient/reviews', label: 'Reviews' },
-    { to: '/patient/profile', label: 'My Profile' }
+    // { to: '/patient/profile', label: 'My Profile' }
   ];
 
 
@@ -184,15 +184,13 @@ const Navbar = () => {
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className={`flex items-center space-x-2 ${isAdmin
-                    ? 'text-white bg-[#005660] hover:bg-[#004450] px-3 py-2 rounded-md transition-colors duration-200'
-                    : 'text-white hover:text-gray-200'
+                  ? 'text-white bg-[#005660] hover:bg-[#004450] px-3 py-2 rounded-md transition-colors duration-200'
+                  : 'text-white hover:text-gray-200'
                   }`}
               >
                 <FaUserCircle className="h-6 w-6" />
                 <span className="font-semibold">
-                  {isAdmin ? 'Admin Panel' : 
-                   user.role === 'patient' ? user.name : 
-                   user.role}
+                  {isAdmin ? 'Admin Panel' : user.name || user.role}
                 </span>
               </button>
               {isDropdownOpen && (
@@ -288,8 +286,8 @@ const Navbar = () => {
                   key={link.to}
                   to={link.to}
                   className={`${isAdmin
-                      ? 'text-white hover:bg-[#005660] px-4 py-2 rounded-md font-semibold flex items-center'
-                      : 'hover:text-[#E5F6F8]'
+                    ? 'text-white hover:bg-[#005660] px-4 py-2 rounded-md font-semibold flex items-center'
+                    : 'hover:text-[#E5F6F8]'
                     } transition-colors ${location.pathname === link.to ? (isAdmin ? 'bg-[#005660]' : 'text-[#E5F6F8]') : ''
                     }`}
                   onClick={() => setIsOpen(false)}

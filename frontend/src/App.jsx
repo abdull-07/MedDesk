@@ -36,6 +36,7 @@
   import PatientReviews from './pages/patient/Reviews';
   import PatientNotifications from './pages/patient/Notifications';
   import PatientProfile from './pages/patient/Profile';
+  import BookAppointmentPage from './pages/patient/BookAppointmentPage';
 
   // Admin Pages
   import AdminDashboard from './pages/admin/Dashboard';
@@ -75,6 +76,10 @@
                 
                 {/* Patient Public Routes */}
                 <Route path="/patient/sign-up" element={<PatientSignUp />} />
+                
+                {/* Public Doctor Routes */}
+                <Route path="/doctors" element={<DoctorsList />} />
+                <Route path="/doctors/:id" element={<PatientDoctorView />} />
 
                 {/* Protected Routes */}
                 <Route path="/profile" element={
@@ -104,6 +109,7 @@
                   <Route path="/patient/dashboard" element={<PatientDashboard />} />
                   <Route path="/patient/doctors" element={<DoctorsList />} />
                   <Route path="/patient/doctors/:id" element={<PatientDoctorView />} />
+                  <Route path="/patient/book-appointment/:doctorId" element={<BookAppointmentPage />} />
                   <Route path="/patient/appointments" element={<PatientAppointments />} />
                   <Route path="/patient/reviews" element={<PatientReviews />} />
                   <Route path="/patient/notifications" element={<PatientNotifications />} />

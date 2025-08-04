@@ -1,7 +1,75 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import { FaUserCircle, FaIdCard, FaPhone, FaCalendarAlt, FaVenusMars, FaTint, FaMapMarkerAlt, FaUserFriends, FaNotesMedical, FaAllergies, FaPills } from 'react-icons/fa';
+
+// Move components outside to prevent recreation on every render
+const InfoItem = ({ icon, label, value, isEditing, name, type = 'text', options = [], onChange }) => (
+  <div className="mb-6">
+    <div className="flex items-center mb-2">
+      {icon}
+      <h3 className="ml-2 text-lg font-medium text-[#1D3557]">{label}</h3>
+    </div>
+    {isEditing && name ? (
+      type === 'select' ? (
+        <select
+          name={name}
+          value={value || ''}
+          onChange={onChange}
+          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
+          style={{ padding: '2px', paddingLeft: '10px' }}
+        >
+          <option value="">Select {label}</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type={type}
+          name={name}
+          value={value || ''}
+          onChange={onChange}
+          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
+          style={{ padding: '2px', paddingLeft: '10px' }}
+        />
+      )
+    ) : (
+      <p className="text-[#457B9D]" style={{ padding: '2px', paddingLeft: '10px' }}>{value || 'Not provided'}</p>
+    )}
+  </div>
+);
+
+const MedicalHistorySection = ({ title, icon, items, field, isEditing, onArrayChange }) => (
+  <div className="mb-6">
+    <div className="flex items-center mb-2">
+      {icon}
+      <h3 className="ml-2 text-lg font-medium text-[#1D3557]">{title}</h3>
+    </div>
+    {isEditing ? (
+      <textarea
+        value={items.join('\n')}
+        onChange={(e) => onArrayChange(field, e.target.value)}
+        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
+        rows={3}
+        placeholder={`Enter each ${field} on a new line`}
+        style={{ padding: '2px', paddingLeft: '10px' }}
+      />
+    ) : (
+      <ul className="list-disc list-inside text-[#457B9D] pl-5" style={{ padding: '2px', paddingLeft: '10px' }}>
+        {items.length > 0 ? (
+          items.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))
+        ) : (
+          <li className="text-gray-500">No {field} listed</li>
+        )}
+      </ul>
+    )}
+  </div>
+);
 
 const PatientProfile = () => {
   const navigate = useNavigate();
@@ -120,7 +188,7 @@ const PatientProfile = () => {
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
@@ -137,17 +205,17 @@ const PatientProfile = () => {
         [name]: value
       }));
     }
-  };
+  }, []);
 
-  const handleArrayChange = (field, value) => {
+  const handleArrayChange = useCallback((field, value) => {
     setFormData(prev => ({
       ...prev,
       medicalHistory: {
         ...prev.medicalHistory,
-        [field]: value.split('\n').filter(item => item.trim() !== '')
+        [field]: value.split('\n')
       }
     }));
-  };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -180,72 +248,7 @@ const PatientProfile = () => {
     }
   };
 
-  const InfoItem = ({ icon, label, value, isEditing, name, type = 'text', options = [] }) => (
-    <div className="mb-6">
-      <div className="flex items-center mb-2">
-        {icon}
-        <h3 className="ml-2 text-lg font-medium text-[#1D3557]">{label}</h3>
-      </div>
-      {isEditing && name ? (
-        type === 'select' ? (
-          <select
-            name={name}
-            value={value || ''}
-            onChange={handleChange}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
-            style={{ padding: '2px', paddingLeft: '10px' }}
-          >
-            <option value="">Select {label}</option>
-            {options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            type={type}
-            name={name}
-            value={value || ''}
-            onChange={handleChange}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
-            style={{ padding: '2px', paddingLeft: '10px' }}
-          />
-        )
-      ) : (
-        <p className="text-[#457B9D]" style={{ padding: '2px', paddingLeft: '10px' }}>{value || 'Not provided'}</p>
-      )}
-    </div>
-  );
 
-  const MedicalHistorySection = ({ title, icon, items, field, isEditing, handleArrayChange }) => (
-    <div className="mb-6">
-      <div className="flex items-center mb-2">
-        {icon}
-        <h3 className="ml-2 text-lg font-medium text-[#1D3557]">{title}</h3>
-      </div>
-      {isEditing ? (
-        <textarea
-          value={items.join('\n')}
-          onChange={(e) => handleArrayChange(field, e.target.value)}
-          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#006D77] focus:ring-[#006D77] sm:text-sm"
-          rows={3}
-          placeholder={`Enter each ${field} on a new line`}
-          style={{ padding: '2px', paddingLeft: '10px' }}
-        />
-      ) : (
-        <ul className="list-disc list-inside text-[#457B9D] pl-5" style={{ padding: '2px', paddingLeft: '10px' }}>
-          {items.length > 0 ? (
-            items.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))
-          ) : (
-            <li className="text-gray-500">No {field} listed</li>
-          )}
-        </ul>
-      )}
-    </div>
-  );
 
   if (isLoading && !isEditing) {
     return (
@@ -301,7 +304,8 @@ const PatientProfile = () => {
               onClick={() => {
                 if (isEditing) {
                   setIsEditing(false);
-                  fetchUserProfile();
+                  setError('');
+                  setSuccess('');
                 } else {
                   setIsEditing(true);
                 }
@@ -324,6 +328,7 @@ const PatientProfile = () => {
                     value={formData.name}
                     isEditing={isEditing}
                     name="name"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
@@ -333,6 +338,7 @@ const PatientProfile = () => {
                     isEditing={isEditing}
                     name="phone"
                     type="tel"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
@@ -342,15 +348,17 @@ const PatientProfile = () => {
                     isEditing={isEditing}
                     name="dateOfBirth"
                     type="date"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
                     icon={<FaVenusMars className="w-5 h-5 text-[#006D77]" />}
                     label="Gender"
-                    value={formData.gender === 'male' ? 'Male' : formData.gender === 'female' ? 'Female' : formData.gender === 'other' ? 'Other' : ''}
+                    value={formData.gender}
                     isEditing={isEditing}
                     name="gender"
                     type="select"
+                    onChange={handleChange}
                     options={[
                       { value: 'male', label: 'Male' },
                       { value: 'female', label: 'Female' },
@@ -365,6 +373,7 @@ const PatientProfile = () => {
                     isEditing={isEditing}
                     name="bloodGroup"
                     type="select"
+                    onChange={handleChange}
                     options={[
                       { value: 'A+', label: 'A+' },
                       { value: 'A-', label: 'A-' },
@@ -387,6 +396,7 @@ const PatientProfile = () => {
                     value={formData.address.street}
                     isEditing={isEditing}
                     name="address.street"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
@@ -395,6 +405,7 @@ const PatientProfile = () => {
                     value={formData.address.city}
                     isEditing={isEditing}
                     name="address.city"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
@@ -403,6 +414,7 @@ const PatientProfile = () => {
                     value={formData.address.state}
                     isEditing={isEditing}
                     name="address.state"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
@@ -411,6 +423,7 @@ const PatientProfile = () => {
                     value={formData.address.zipCode}
                     isEditing={isEditing}
                     name="address.zipCode"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
@@ -419,6 +432,7 @@ const PatientProfile = () => {
                     value={formData.address.country}
                     isEditing={isEditing}
                     name="address.country"
+                    onChange={handleChange}
                   />
                 </div>
               </div>
@@ -433,6 +447,7 @@ const PatientProfile = () => {
                     value={formData.emergencyContact.name}
                     isEditing={isEditing}
                     name="emergencyContact.name"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
@@ -441,6 +456,7 @@ const PatientProfile = () => {
                     value={formData.emergencyContact.relationship}
                     isEditing={isEditing}
                     name="emergencyContact.relationship"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
@@ -450,6 +466,7 @@ const PatientProfile = () => {
                     isEditing={isEditing}
                     name="emergencyContact.phone"
                     type="tel"
+                    onChange={handleChange}
                   />
 
                   <InfoItem
@@ -459,6 +476,7 @@ const PatientProfile = () => {
                     isEditing={isEditing}
                     name="emergencyContact.email"
                     type="email"
+                    onChange={handleChange}
                   />
                 </div>
               </div>
@@ -474,7 +492,7 @@ const PatientProfile = () => {
                       items={formData.medicalHistory.conditions}
                       field="conditions"
                       isEditing={isEditing}
-                      handleArrayChange={handleArrayChange}
+                      onArrayChange={handleArrayChange}
                     />
 
                     <MedicalHistorySection
@@ -483,7 +501,7 @@ const PatientProfile = () => {
                       items={formData.medicalHistory.allergies}
                       field="allergies"
                       isEditing={isEditing}
-                      handleArrayChange={handleArrayChange}
+                      onArrayChange={handleArrayChange}
                     />
                   </div>
 
@@ -494,7 +512,7 @@ const PatientProfile = () => {
                       items={formData.medicalHistory.medications}
                       field="medications"
                       isEditing={isEditing}
-                      handleArrayChange={handleArrayChange}
+                      onArrayChange={handleArrayChange}
                     />
 
                     <MedicalHistorySection
@@ -503,7 +521,7 @@ const PatientProfile = () => {
                       items={formData.medicalHistory.surgeries || []}
                       field="surgeries"
                       isEditing={isEditing}
-                      handleArrayChange={handleArrayChange}
+                      onArrayChange={handleArrayChange}
                     />
 
                     <MedicalHistorySection
@@ -512,7 +530,7 @@ const PatientProfile = () => {
                       items={formData.medicalHistory.familyHistory || []}
                       field="familyHistory"
                       isEditing={isEditing}
-                      handleArrayChange={handleArrayChange}
+                      onArrayChange={handleArrayChange}
                     />
                   </div>
                 </div>
@@ -525,7 +543,8 @@ const PatientProfile = () => {
                   type="button"
                   onClick={() => {
                     setIsEditing(false);
-                    fetchUserProfile();
+                    setError('');
+                    setSuccess('');
                   }}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-[#457B9D] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#83C5BE]"
                 >

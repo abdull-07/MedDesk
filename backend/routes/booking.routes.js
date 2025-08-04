@@ -3,6 +3,7 @@ import { authenticateToken } from '../middleware/auth.middleware.js';
 import { roleCheck } from '../middleware/role.middleware.js';
 import {
   searchDoctors,
+  getDoctorByUserId,
   getDoctorAvailability,
   getNextAvailable,
   initiateBooking,
@@ -18,6 +19,9 @@ router.use(roleCheck(['patient']));
 
 // Search doctors with filters
 router.get('/doctors/search', searchDoctors);
+
+// Get doctor profile by user ID
+router.get('/doctors/by-user/:userId', getDoctorByUserId);
 
 // Get doctor's availability for a date range
 router.get('/doctors/:id/availability', getDoctorAvailability);

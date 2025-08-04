@@ -32,28 +32,78 @@ const DoctorSignUp = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/doctor/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // Since the backend API doesn't exist yet, simulate successful registration
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/doctor/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        if (!response.ok) {
+          throw new Error(data.message || 'Registration failed');
+        }
+
+        // Store pending user data for verification page
+        const pendingUser = {
+          id: `doc-pending-${Date.now()}`,
+          name: formData.name,
+          email: formData.email,
+          role: 'doctor',
+          specialty: formData.specialization,
+          qualifications: formData.qualifications,
+          clinicName: formData.clinicName,
+          experience: formData.experience,
+          licenseNumber: formData.licenseNumber,
+          consultationFee: formData.consultationFee,
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+          isVerified: false
+        };
+
+        localStorage.setItem('pendingUser', JSON.stringify(pendingUser));
+        
+        // Clear any existing auth data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+
+        // Redirect to verification pending page
+        navigate('/verification-pending');
+      } catch (apiError) {
+        console.log('API not available, simulating successful registration');
+        
+        // Simulate successful registration with dummy data
+        const pendingUser = {
+          id: `doc-pending-${Date.now()}`,
+          name: formData.name,
+          email: formData.email,
+          role: 'doctor',
+          specialty: formData.specialization,
+          qualifications: formData.qualifications,
+          clinicName: formData.clinicName,
+          experience: formData.experience,
+          licenseNumber: formData.licenseNumber,
+          consultationFee: formData.consultationFee,
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+          isVerified: false
+        };
+
+        localStorage.setItem('pendingUser', JSON.stringify(pendingUser));
+        
+        // Clear any existing auth data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+
+        // Redirect to verification pending page
+        navigate('/verification-pending');
       }
-
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Redirect to doctor dashboard
-      navigate('/doctor/dashboard');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import Appointment from '../models/appointment.model.js';
 import User from '../models/user.model.js';
 import NotificationService from '../services/notification.service.js';
+import DoctorService from '../services/doctor.service.js';
 
 // Create new appointment
 export const createAppointment = async (req, res) => {
@@ -22,10 +23,18 @@ export const createAppointment = async (req, res) => {
     }
 
     // Validate doctor exists and is verified
-    const doctor = await User.findOne({ _id: doctorId, role: 'doctor', isVerified: true });
-    if (!doctor) {
+    const doctorProfile = await DoctorService.getDoctorById(doctorId);
+    if (!doctorProfile) {
       return res.status(404).json({
         message: 'Doctor not found or not verified'
+      });
+    }
+    
+    // Get the user info for the doctor
+    const doctor = await User.findById(doctorProfile.userId);
+    if (!doctor) {
+      return res.status(404).json({
+        message: 'Doctor user not found'
       });
     }
 
@@ -33,9 +42,9 @@ export const createAppointment = async (req, res) => {
     const appointmentStart = new Date(startTime);
     const appointmentEnd = new Date(endTime);
 
-    // Check for time slot conflicts
+    // Check for time slot conflicts - use the user ID, not the doctor profile ID
     const conflict = await Appointment.checkForConflicts(
-      doctorId,
+      doctorProfile.userId,
       appointmentStart,
       appointmentEnd
     );
@@ -46,10 +55,10 @@ export const createAppointment = async (req, res) => {
       });
     }
 
-    // Create appointment
+    // Create appointment - use the user ID, not the doctor profile ID
     const appointment = new Appointment({
       patient: req.user.id,
-      doctor: doctorId,
+      doctor: doctorProfile.userId, // Use the userId from the doctor profile
       startTime: appointmentStart,
       endTime: appointmentEnd,
       type,
@@ -65,9 +74,9 @@ export const createAppointment = async (req, res) => {
     // Format date and time for notifications
     const { date, time } = NotificationService.formatDateTime(appointmentStart);
 
-    // Create notification for doctor
+    // Create notification for doctor - use the user ID, not the doctor profile ID
     await NotificationService.createNotification({
-      recipient: doctorId,
+      recipient: doctorProfile.userId,
       type: 'APPOINTMENT_CONFIRMED',
       title: 'New Appointment Scheduled',
       message: `New appointment scheduled with ${patient.name} on ${date} at ${time}`,
@@ -338,9 +347,27 @@ export const rescheduleAppointment = async (req, res) => {
     // Store old times for notification
     const oldStart = appointment.startTime;
 
+    // Convert string dates to Date objects
+    const newStartTime = new Date(startTime);
+    const newEndTime = new Date(endTime);
+
+    // Check for time slot conflicts - exclude current appointment
+    const conflict = await Appointment.checkForConflicts(
+      appointment.doctor,
+      newStartTime,
+      newEndTime,
+      appointment._id
+    );
+
+    if (conflict) {
+      return res.status(409).json({
+        message: 'This time slot is already booked'
+      });
+    }
+
     // Update appointment times
-    appointment.startTime = new Date(startTime);
-    appointment.endTime = new Date(endTime);
+    appointment.startTime = newStartTime;
+    appointment.endTime = newEndTime;
     await appointment.save();
 
     // Get user details
@@ -415,13 +442,10 @@ export const getDoctorSchedule = async (req, res) => {
       });
     }
 
-    const doctor = await User.findOne({
-      _id: req.params.id,
-      role: 'doctor',
-      isVerified: true
-    });
-
-    if (!doctor) {
+    // Get doctor profile using the new structure
+    const doctorProfile = await DoctorService.getDoctorById(req.params.id);
+    
+    if (!doctorProfile) {
       return res.status(404).json({
         message: 'Doctor not found or not verified'
       });
@@ -433,15 +457,16 @@ export const getDoctorSchedule = async (req, res) => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
+    // Find appointments using the user ID (since appointments reference user IDs)
     const appointments = await Appointment.find({
-      doctor: req.params.id,
+      doctor: doctorProfile.userId,
       startTime: { $gte: start, $lte: end },
       status: { $ne: 'cancelled' }
     }).select('startTime endTime status');
 
     res.json({
-      doctorId: doctor._id,
-      doctorName: doctor.name,
+      doctorId: doctorProfile._id,
+      doctorName: doctorProfile.name,
       appointments
     });
 
