@@ -7,7 +7,7 @@ const Doctors = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('pending');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedSpecialty, setSelectedSpecialty] = useState('all');
   const [currentDoctor, setCurrentDoctor] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);

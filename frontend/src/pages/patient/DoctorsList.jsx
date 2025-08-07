@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 
 const DoctorsList = () => {
+  const navigate = useNavigate();
   const [doctors, setDoctors] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,6 +15,24 @@ const DoctorsList = () => {
     experience: '',
     rating: '',
   });
+
+  // Check if user is authenticated
+  const isAuthenticated = () => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    return token && user;
+  };
+
+  // Handle book appointment click
+  const handleBookAppointment = (doctorId) => {
+    if (!isAuthenticated()) {
+      // Store the intended destination for redirect after login
+      localStorage.setItem('redirectAfterLogin', `/patient/book-appointment/${doctorId}`);
+      navigate('/sign-in');
+    } else {
+      navigate(`/patient/book-appointment/${doctorId}`);
+    }
+  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -168,12 +187,12 @@ const DoctorsList = () => {
           <span className="text-sm font-medium text-[#006D77]">
             ${doctor.consultationFee}
           </span>
-          <Link
-            to={`/patient/book-appointment/${doctor.id}`}
+          <button
+            onClick={() => handleBookAppointment(doctor.id)}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-[#006D77] hover:bg-[#005A63] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#83C5BE] transition-colors duration-200"
           >
             Book Now
-          </Link>
+          </button>
         </div>
       </div>
     </div>

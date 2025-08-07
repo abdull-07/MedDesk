@@ -214,13 +214,20 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(response.data.user));
         setCurrentUser(response.data.user);
 
-        // Redirect based on user role
-        if (response.data.user && response.data.user.role === 'doctor') {
-          console.log('Redirecting doctor to dashboard');
-          navigate('/doctor/dashboard');
+        // Check for redirect URL after login
+        const redirectAfterLogin = localStorage.getItem('redirectAfterLogin');
+        if (redirectAfterLogin) {
+          localStorage.removeItem('redirectAfterLogin');
+          navigate(redirectAfterLogin);
         } else {
-          console.log('Redirecting patient to dashboard');
-          navigate('/patient/dashboard');
+          // Redirect based on user role
+          if (response.data.user && response.data.user.role === 'doctor') {
+            console.log('Redirecting doctor to dashboard');
+            navigate('/doctor/dashboard');
+          } else {
+            console.log('Redirecting patient to dashboard');
+            navigate('/patient/dashboard');
+          }
         }
       }
 

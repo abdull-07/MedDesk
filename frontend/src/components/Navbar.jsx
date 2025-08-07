@@ -105,7 +105,7 @@ const Navbar = () => {
   const publicLinks = [
     { to: '/', label: 'Home' },
     { to: '/about', label: 'About' },
-    { to: '/patient/doctors', label: 'Find Doctors' },
+    { to: '/doctors', label: 'Find Doctors' },
     { to: '/contact', label: 'Contact' }
   ];
 
