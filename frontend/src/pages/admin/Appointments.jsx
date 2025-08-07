@@ -13,16 +13,36 @@ const Appointments = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch(
-          `/api/admin/appointments?page=${currentPage}&status=${selectedStatus}&date=${selectedDate}&search=${searchQuery}`
-        );
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        const queryParams = new URLSearchParams({
+          page: currentPage,
+          status: selectedStatus,
+          date: selectedDate,
+          search: searchQuery
+        });
+
+        const response = await fetch(`/api/admin/appointments?${queryParams}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        setAppointments(data.appointments);
-        setTotalPages(data.totalPages);
+        setAppointments(Array.isArray(data.appointments) ? data.appointments : []);
+        setTotalPages(data.totalPages || 1);
       } catch (error) {
         console.error('Error fetching appointments:', error);
         setError('Failed to load appointments');
+        setAppointments([]);
       } finally {
         setIsLoading(false);
       }
@@ -33,10 +53,15 @@ const Appointments = () => {
 
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
-      // TODO: Replace with actual API call
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
       const response = await fetch(`/api/admin/appointments/${appointmentId}/status`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus }),
@@ -45,15 +70,18 @@ const Appointments = () => {
       if (response.ok) {
         setAppointments(currentAppointments =>
           currentAppointments.map(appointment =>
-            appointment.id === appointmentId
+            appointment._id === appointmentId
               ? { ...appointment, status: newStatus }
               : appointment
           )
         );
+        alert('Appointment status updated successfully');
+      } else {
+        throw new Error('Failed to update appointment status');
       }
     } catch (error) {
       console.error('Error updating appointment status:', error);
-      alert('Failed to update appointment status');
+      alert(`Failed to update appointment status: ${error.message}`);
     }
   };
 
@@ -202,16 +230,16 @@ const Appointments = () => {
                   </tr>
                 ) : (
                   appointments.map((appointment) => {
-                    const { date, time } = formatDateTime(appointment.dateTime);
+                    const { date, time } = formatDateTime(appointment.startTime);
                     return (
-                      <tr key={appointment.id} className="hover:bg-gray-50">
+                      <tr key={appointment._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <img
-                              src={appointment.patient.avatar}
-                              alt={appointment.patient.name}
-                              className="w-10 h-10 rounded-full"
-                            />
+                            <div className="w-10 h-10 rounded-full bg-[#006D77] flex items-center justify-center">
+                              <span className="text-white font-medium text-sm">
+                                {appointment.patient.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-[#1D3557]">
                                 {appointment.patient.name}
@@ -224,17 +252,17 @@ const Appointments = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <img
-                              src={appointment.doctor.avatar}
-                              alt={appointment.doctor.name}
-                              className="w-10 h-10 rounded-full"
-                            />
+                            <div className="w-10 h-10 rounded-full bg-[#83C5BE] flex items-center justify-center">
+                              <span className="text-white font-medium text-sm">
+                                {appointment.doctor.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-[#1D3557]">
                                 {appointment.doctor.name}
                               </div>
                               <div className="text-sm text-[#457B9D]">
-                                {appointment.doctor.specialty}
+                                {appointment.doctor.specialization || 'Not specified'}
                               </div>
                             </div>
                           </div>
@@ -254,13 +282,14 @@ const Appointments = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <select
                             value={appointment.status}
-                            onChange={(e) => handleStatusChange(appointment.id, e.target.value)}
+                            onChange={(e) => handleStatusChange(appointment._id, e.target.value)}
                             className="rounded-md border-gray-300 text-sm focus:ring-[#006D77] focus:border-[#006D77]"
                           >
+                            <option value="pending">Pending</option>
                             <option value="scheduled">Scheduled</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
-                            <option value="pending">Pending</option>
+                            <option value="no-show">No Show</option>
                           </select>
                         </td>
                       </tr>

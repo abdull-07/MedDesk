@@ -5,6 +5,7 @@ import api from '../../utils/api';
 const DoctorProfile = () => {
   const { id } = useParams();
   const [doctor, setDoctor] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -19,24 +20,28 @@ const DoctorProfile = () => {
   useEffect(() => {
     const fetchDoctorProfile = async () => {
       try {
-        // Use the specific doctor endpoint
-        const response = await api.get(`/doctors/${id}`);
-        const doctorData = response.data;
-        
+        // First fetch doctor profile to get the userId
+        const doctorResponse = await api.get(`/doctors/${id}`);
+        const doctorData = doctorResponse.data;
+
         if (!doctorData) {
           setError('Doctor not found');
           return;
         }
 
+        // Then fetch reviews using the userId (not the doctor profile id)
+        const reviewsResponse = await api.get(`/reviews/doctor/${doctorData.userId}?limit=5`);
+
         // Transform the data to match frontend format
         const formattedDoctor = {
           id: doctorData._id,
+          userId: doctorData.userId, // Store the userId for reviews
           name: doctorData.name,
           specialty: doctorData.specialization,
           rating: doctorData.ratings?.average || 0,
           reviewCount: doctorData.ratings?.count || 0,
-          location: doctorData.location?.city ? 
-            `${doctorData.clinicName}, ${doctorData.location.city}` : 
+          location: doctorData.location?.city ?
+            `${doctorData.clinicName}, ${doctorData.location.city}` :
             doctorData.clinicName || 'Location not specified',
           experience: doctorData.experience || 0,
           consultationFee: doctorData.consultationFee || 100,
@@ -44,11 +49,11 @@ const DoctorProfile = () => {
           about: doctorData.about || 'No information available',
           languages: doctorData.languages || [],
           services: doctorData.services || [],
-          image: `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`,
-          reviews: [] // You can fetch reviews separately if needed
+          image: `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
         };
-        
+
         setDoctor(formattedDoctor);
+        setReviews(reviewsResponse.data.reviews || []);
       } catch (error) {
         console.error('Error fetching doctor profile:', error);
         setError('Failed to load doctor profile');
@@ -69,29 +74,29 @@ const DoctorProfile = () => {
 
   const fetchAvailableSlots = async () => {
     if (!selectedDate) return;
-    
+
     setIsLoadingSlots(true);
     setError('');
-    
+
     try {
       const response = await api.get(`/bookings/doctors/${id}/availability?date=${selectedDate}`);
       const { slots } = response.data;
-      
+
       // Format slots for display
       const formattedSlots = slots.map(slot => ({
         start: new Date(slot.start),
         end: new Date(slot.end),
-        display: `${new Date(slot.start).toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+        display: `${new Date(slot.start).toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: true 
-        })} - ${new Date(slot.end).toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+          hour12: true
+        })} - ${new Date(slot.end).toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: true 
+          hour12: true
         })}`
       }));
-      
+
       setAvailableSlots(formattedSlots);
     } catch (error) {
       console.error('Error fetching available slots:', error);
@@ -147,29 +152,60 @@ const DoctorProfile = () => {
     }
   };
 
-  const ReviewCard = ({ review }) => (
-    <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-      <div className="flex items-center mb-2">
-        <div className="flex items-center">
-          {[...Array(5)].map((_, i) => (
-            <svg
-              key={i}
-              className={`w-4 h-4 ${
-                i < review.rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          ))}
+  const ReviewCard = ({ review }) => {
+    const formatDate = (dateString) => {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+    return (
+      <div className="bg-gray-50 rounded-lg p-4 mb-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-start space-x-3">
+            <div className="w-10 h-10 bg-[#83C5BE] rounded-full flex items-center justify-center">
+              <span className="text-white font-semibold">
+                {review.isAnonymous ? 'A' : (review.patient?.name?.charAt(0) || 'P')}
+              </span>
+            </div>
+            <div>
+              <h4 className="font-medium text-[#1D3557]">
+                {review.isAnonymous ? 'Anonymous Patient' : (review.patient?.name || 'Patient')}
+              </h4>
+              <div className="mt-1 flex items-center">
+                {[...Array(5)].map((_, i) => (
+                  <svg
+                    key={i}
+                    className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'
+                      }`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+            </div>
+          </div>
+          <span className="text-xs text-gray-500">
+            {formatDate(review.createdAt)}
+          </span>
         </div>
-        <span className="text-sm text-[#457B9D] ml-2">{review.date}</span>
+
+        {review.title && (
+          <h5 className="font-medium text-[#1D3557] mb-2">
+            {review.title}
+          </h5>
+        )}
+
+        <p className="text-gray-700 text-sm leading-relaxed">
+          {review.review}
+        </p>
       </div>
-      <p className="text-[#1D3557] mb-2">{review.comment}</p>
-      <p className="text-sm text-[#457B9D]">- {review.patientName}</p>
-    </div>
-  );
+    );
+  };
 
   if (isLoading) {
     return (
@@ -220,13 +256,13 @@ const DoctorProfile = () => {
                 <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
                   <img
                     src={doctor?.image}
-                    alt={`Dr. ${doctor?.name}`}
+                    alt={`${doctor?.name}`}
                     className="w-32 h-32 rounded-lg object-cover"
                   />
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-[#1D3557] mb-2">
-                    Dr. {doctor?.name}
+                    {doctor?.name}
                   </h1>
                   <p className="text-lg text-[#457B9D] mb-4">{doctor?.specialty}</p>
                   <div className="flex items-center mb-4">
@@ -234,9 +270,8 @@ const DoctorProfile = () => {
                       {[...Array(5)].map((_, i) => (
                         <svg
                           key={i}
-                          className={`w-5 h-5 ${
-                            i < doctor?.rating ? 'text-yellow-400' : 'text-gray-300'
-                          }`}
+                          className={`w-5 h-5 ${i < doctor?.rating ? 'text-yellow-400' : 'text-gray-300'
+                            }`}
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -276,15 +311,23 @@ const DoctorProfile = () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-[#1D3557]">Patient Reviews</h2>
                 <Link
-                  to={`/reviews?doctor=${id}`}
+                  to={`/patient/reviews?doctor=${doctor?.userId}`}
                   className="text-sm font-medium text-[#006D77] hover:text-[#83C5BE] transition-colors duration-300"
                 >
                   View all reviews
                 </Link>
               </div>
-              {doctor?.reviews?.map((review) => (
-                <ReviewCard key={review.id} review={review} />
-              ))}
+              {reviews.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-[#457B9D]">No reviews yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <ReviewCard key={review._id} review={review} />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -300,7 +343,7 @@ const DoctorProfile = () => {
                   Full Booking Page →
                 </Link>
               </div>
-              
+
               {bookingSuccess ? (
                 <div className="text-center">
                   <div className="mb-4 flex justify-center">
@@ -399,11 +442,10 @@ const DoctorProfile = () => {
                             key={index}
                             type="button"
                             onClick={() => setSelectedSlot(slot)}
-                            className={`p-2 text-sm rounded-lg border transition-colors duration-200 ${
-                              selectedSlot === slot
-                                ? 'bg-[#006D77] text-white border-[#006D77]'
-                                : 'bg-white text-[#1D3557] border-gray-300 hover:border-[#006D77] hover:bg-[#F1FAEE]'
-                            }`}
+                            className={`p-2 text-sm rounded-lg border transition-colors duration-200 ${selectedSlot === slot
+                              ? 'bg-[#006D77] text-white border-[#006D77]'
+                              : 'bg-white text-[#1D3557] border-gray-300 hover:border-[#006D77] hover:bg-[#F1FAEE]'
+                              }`}
                           >
                             {slot.display}
                           </button>

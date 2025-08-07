@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import api from '../../utils/api';
 
 const Patients = () => {
   const [patients, setPatients] = useState([]);
@@ -11,10 +12,28 @@ const Patients = () => {
   useEffect(() => {
     const fetchPatients = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch('/api/doctor/patients');
-        const data = await response.json();
-        setPatients(data);
+        setIsLoading(true);
+        setError('');
+        
+        // Fetch all patients for this doctor using the new endpoint
+        const response = await api.get('/patients');
+        const patientsArray = response.data || [];
+        
+        // Format the data to ensure consistency
+        const formattedPatients = patientsArray.map(patient => ({
+          _id: patient._id,
+          name: patient.name || 'Unknown Patient',
+          email: patient.email || 'No email',
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name || 'U')}&background=83C5BE&color=fff`,
+          age: patient.age || 'N/A',
+          gender: patient.gender || 'N/A',
+          phone: patient.phone || 'N/A',
+          medicalHistory: patient.medicalHistory || { conditions: [], allergies: [], medications: [], surgeries: [], familyHistory: [] },
+          notes: patient.notes || '',
+          recentAppointments: patient.recentAppointments || []
+        }));
+        
+        setPatients(formattedPatients);
       } catch (error) {
         console.error('Error fetching patients:', error);
         setError('Failed to load patients');
@@ -56,29 +75,58 @@ const Patients = () => {
           </div>
         </div>
         <button
-          onClick={() => setSelectedPatient(selectedPatient?.id === patient.id ? null : patient)}
+          onClick={() => setSelectedPatient(selectedPatient?._id === patient._id ? null : patient)}
           className="text-[#006D77] hover:text-[#83C5BE] transition-colors duration-300"
         >
-          {selectedPatient?.id === patient.id ? 'Hide Details' : 'View Details'}
+          {selectedPatient?._id === patient._id ? 'Hide Details' : 'View Details'}
         </button>
       </div>
 
-      {selectedPatient?.id === patient.id && (
+      {selectedPatient?._id === patient._id && (
         <div className="mt-6 border-t pt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h4 className="text-sm font-medium text-[#1D3557] mb-2">
                 Medical History
               </h4>
-              <div className="space-y-2">
-                {patient.medicalHistory.map((item, index) => (
-                  <div
-                    key={index}
-                    className="text-sm text-[#457B9D] bg-gray-50 p-2 rounded"
-                  >
-                    {item}
+              <div className="space-y-3">
+                {patient.medicalHistory.conditions && patient.medicalHistory.conditions.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-[#1D3557] mb-1">Conditions:</p>
+                    {patient.medicalHistory.conditions.map((condition, index) => (
+                      <div key={index} className="text-sm text-[#457B9D] bg-gray-50 p-2 rounded mb-1">
+                        {condition}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+                {patient.medicalHistory.allergies && patient.medicalHistory.allergies.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-[#1D3557] mb-1">Allergies:</p>
+                    {patient.medicalHistory.allergies.map((allergy, index) => (
+                      <div key={index} className="text-sm text-[#457B9D] bg-red-50 p-2 rounded mb-1">
+                        {allergy}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {patient.medicalHistory.medications && patient.medicalHistory.medications.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-[#1D3557] mb-1">Current Medications:</p>
+                    {patient.medicalHistory.medications.map((medication, index) => (
+                      <div key={index} className="text-sm text-[#457B9D] bg-blue-50 p-2 rounded mb-1">
+                        {medication}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {(!patient.medicalHistory.conditions || patient.medicalHistory.conditions.length === 0) &&
+                 (!patient.medicalHistory.allergies || patient.medicalHistory.allergies.length === 0) &&
+                 (!patient.medicalHistory.medications || patient.medicalHistory.medications.length === 0) && (
+                  <div className="text-sm text-[#457B9D] bg-gray-50 p-2 rounded">
+                    No medical history available
+                  </div>
+                )}
               </div>
             </div>
             <div>
@@ -108,28 +156,19 @@ const Patients = () => {
               <textarea
                 value={patient.notes || ''}
                 onChange={async (e) => {
-                  // TODO: Replace with actual API call
-                  try {
-                    const response = await fetch(`/api/doctor/patients/${patient.id}/notes`, {
-                      method: 'PUT',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({ notes: e.target.value }),
-                    });
-
-                    if (response.ok) {
-                      setPatients(currentPatients =>
-                        currentPatients.map(p =>
-                          p.id === patient.id
-                            ? { ...p, notes: e.target.value }
-                            : p
-                        )
-                      );
-                    }
-                  } catch (error) {
-                    console.error('Error updating patient notes:', error);
-                    alert('Failed to update notes');
+                  // Update local state immediately for better UX
+                  const newNotes = e.target.value;
+                  setPatients(currentPatients =>
+                    currentPatients.map(p =>
+                      p._id === patient._id
+                        ? { ...p, notes: newNotes }
+                        : p
+                    )
+                  );
+                  
+                  // Update selected patient state as well
+                  if (selectedPatient?._id === patient._id) {
+                    setSelectedPatient({ ...selectedPatient, notes: newNotes });
                   }
                 }}
                 placeholder="Add notes about the patient..."
@@ -207,7 +246,7 @@ const Patients = () => {
             </div>
           ) : (
             filteredPatients.map((patient) => (
-              <PatientCard key={patient.id} patient={patient} />
+              <PatientCard key={patient._id} patient={patient} />
             ))
           )}
         </div>

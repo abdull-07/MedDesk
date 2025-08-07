@@ -6,16 +6,21 @@ import NotificationService from './notification.service.js';
 class ReviewService {
   static async createReview(reviewData) {
     try {
-      // Check if appointment exists and is completed
+      // Check if appointment exists and is in the past (allowing reviews for past appointments)
       const appointment = await Appointment.findOne({
         _id: reviewData.appointment,
         patient: reviewData.patient,
         doctor: reviewData.doctor,
-        status: 'completed'
+        status: { $in: ['completed', 'scheduled'] } // Allow both completed and scheduled appointments
       });
 
       if (!appointment) {
-        throw new Error('Invalid appointment or appointment not completed');
+        throw new Error('Invalid appointment or appointment not found');
+      }
+
+      // Check if appointment is in the past
+      if (new Date(appointment.endTime) > new Date()) {
+        throw new Error('Cannot review future appointments');
       }
 
       // Check if review already exists for this appointment
@@ -27,25 +32,33 @@ class ReviewService {
         throw new Error('Review already exists for this appointment');
       }
 
-      // Create review
-      const review = new Review(reviewData);
+      // Create review with auto-approval
+      const review = new Review({
+        ...reviewData,
+        status: 'approved' // Auto-approve reviews
+      });
       await review.save();
 
       // Update doctor's rating
       const doctor = await User.findById(reviewData.doctor);
       await doctor.updateRating(reviewData.rating);
 
-      // Create notification for doctor
-      await NotificationService.createNotification({
-        recipient: reviewData.doctor,
-        type: 'REVIEW_RECEIVED',
-        title: 'New Review Received',
-        message: `A patient has left a ${reviewData.rating}-star review for you`,
-        relatedTo: {
-          model: 'Review',
-          id: review._id
-        }
-      });
+      // Create notification for doctor (non-blocking)
+      try {
+        await NotificationService.createNotification({
+          recipient: reviewData.doctor,
+          type: 'REVIEW_RECEIVED',
+          title: 'New Review Received',
+          message: `A patient has left a ${reviewData.rating}-star review for you`,
+          relatedTo: {
+            model: 'Review',
+            id: review._id
+          }
+        });
+      } catch (notificationError) {
+        console.error('Failed to create notification:', notificationError);
+        // Don't throw error - notification failure shouldn't fail review creation
+      }
 
       return review;
     } catch (error) {
@@ -65,9 +78,15 @@ class ReviewService {
       const skip = (page - 1) * limit;
 
       const query = {
-        doctor: doctorId,
-        status
+        doctor: doctorId
       };
+
+      // Handle status as array or single value
+      if (Array.isArray(status)) {
+        query.status = { $in: status };
+      } else {
+        query.status = status;
+      }
 
       const [reviews, total] = await Promise.all([
         Review.find(query)
@@ -234,8 +253,8 @@ class ReviewService {
         await doctor.save();
       }
 
-      // Update review
-      Object.assign(review, updateData, { status: 'pending' });
+      // Update review (keep approved status)
+      Object.assign(review, updateData);
       await review.save();
 
       return review;

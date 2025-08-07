@@ -6,6 +6,7 @@ import {
   getAppointments,
   getAppointmentById,
   updateAppointment,
+  updateAppointmentStatus,
   cancelAppointment,
   rescheduleAppointment,
   getDoctorSchedule
@@ -33,6 +34,14 @@ router.get(
   '/:id',
   authenticateToken,
   getAppointmentById
+);
+
+// Update appointment status (both patient and doctor with proper validation)
+router.patch(
+  '/:id/status',
+  authenticateToken,
+  roleCheck(['patient', 'doctor']),
+  updateAppointmentStatus
 );
 
 // Update appointment (doctors only)

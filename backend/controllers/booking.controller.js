@@ -3,6 +3,7 @@ import Doctor from '../models/doctor.model.js';
 import Appointment from '../models/appointment.model.js';
 import availabilityService from '../services/availability.service.js';
 import DoctorService from '../services/doctor.service.js';
+import NotificationService from '../services/notification.service.js';
 
 // Search doctors with filters
 export const searchDoctors = async (req, res) => {
@@ -263,9 +264,40 @@ export const confirmBooking = async (req, res) => {
 
     // TODO: Process payment here
 
-    // Update appointment status
-    appointment.status = 'scheduled';
+    // Keep appointment status as 'pending' - doctor needs to approve it
+    // appointment.status remains 'pending' until doctor approval
     await appointment.save();
+
+    // Get patient and doctor information for notification
+    const [patient, doctorUser] = await Promise.all([
+      User.findById(appointment.patient),
+      User.findById(appointment.doctor)
+    ]);
+
+    // Create notification for doctor
+    try {
+      const { date, time } = NotificationService.formatDateTime(appointment.startTime);
+      
+      await NotificationService.createNotification({
+        recipient: appointment.doctor, // Doctor's user ID
+        type: 'APPOINTMENT_BOOKED',
+        title: 'New Appointment Booked',
+        message: `${patient.name} has booked an appointment with you on ${date} at ${time}`,
+        relatedTo: {
+          model: 'Appointment',
+          id: appointment._id
+        },
+        // Additional data for email template
+        patientName: patient.name,
+        date,
+        time,
+        appointmentType: appointment.type,
+        reason: appointment.reason
+      });
+    } catch (notificationError) {
+      console.error('Failed to create appointment notification:', notificationError);
+      // Don't fail the booking if notification fails
+    }
 
     res.json({
       message: 'Booking confirmed successfully',

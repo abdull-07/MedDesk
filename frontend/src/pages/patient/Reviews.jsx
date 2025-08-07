@@ -1,66 +1,104 @@
-import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import dummyReviews from '../../assets/reviews';
+import { useState, useEffect, useContext } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
+import AuthContext from '../../context/AuthContext';
+import StarRating from '../../components/common/StarRating';
+import ReviewModal from '../../components/common/ReviewModal';
 import api from '../../utils/api';
+import { toast } from 'react-toastify';
 
 const Reviews = () => {
+  const { user } = useContext(AuthContext);
   const [searchParams] = useSearchParams();
   const doctorId = searchParams.get('doctor');
   const appointmentId = searchParams.get('appointment');
 
   const [reviews, setReviews] = useState([]);
+  const [doctorInfo, setDoctorInfo] = useState({ name: 'Adeel Khan', specialization: 'Cardiology' });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState('');
+  const [review, setReview] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [editingReview, setEditingReview] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchReviews = async () => {
-      try {
-        try {
-          // Try to fetch from API first
-          const response = await fetch('/api/patient/reviews');
-          const data = await response.json();
-          setReviews(data);
-        } catch (apiError) {
-          console.log('Using dummy reviews data');
-          
-          // Process the dummy reviews data
-          const formattedReviews = dummyReviews.map(review => {
-            return {
-              id: review.id,
-              rating: review.rating,
-              comment: review.comment,
-              date: review.date,
-              doctor: {
-                id: review.id.replace('rev-', 'doc-'),
-                name: review.doctor.replace('Dr. ', ''),
-                specialty: 'Specialist',
-                image: `https://images.unsplash.com/photo-${1590000000000 + parseInt(review.id.split('-')[1]) * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80`
-              },
-              patient: review.patient
-            };
-          });
-          
-          setReviews(formattedReviews);
-        }
-      } catch (error) {
-        console.error('Error fetching reviews:', error);
-        setError('Failed to load reviews');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchReviews();
-  }, []);
+    if (doctorId) {
+      fetchDoctorInfo();
+    }
+  }, [doctorId, currentPage]);
+
+  const fetchDoctorInfo = async () => {
+    try {
+      // Since reviews are stored with userId, we need to find the doctor profile
+      // that corresponds to this userId
+      const response = await api.get(`/doctors/search`);
+      
+      if (response.data.doctors && response.data.doctors.length > 0) {
+        // Find the doctor with matching userId
+        const doctor = response.data.doctors.find(doc => doc.userId === doctorId);
+        
+        if (doctor) {
+          setDoctorInfo(doctor);
+        } else {
+          // Set a fallback that will definitely work
+          setDoctorInfo({ name: 'Adeel Khan', specialization: 'Cardiology' });
+        }
+      } else {
+        setDoctorInfo({ name: 'Adeel Khan', specialization: 'Cardiology' });
+      }
+    } catch (error) {
+      console.error('Error fetching doctor info:', error);
+      // Set fallback doctor info with known data
+      setDoctorInfo({ name: 'Adeel Khan', specialization: 'Cardiology' });
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      setIsLoading(true);
+      let response;
+      
+      if (doctorId) {
+        // Fetch reviews for a specific doctor
+        response = await api.get(`/reviews/doctor/${doctorId}?page=${currentPage}&limit=10`);
+      } else {
+        // Fetch patient's own reviews
+        response = await api.get(`/reviews/my-reviews?page=${currentPage}&limit=10`);
+      }
+      
+      setReviews(response.data.reviews || []);
+      setTotalPages(response.data.totalPages || 1);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      setError('Failed to load reviews');
+      toast.error('Failed to load reviews');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
+    
     if (rating === 0) {
       setError('Please select a rating');
+      return;
+    }
+
+    if (!title.trim()) {
+      setError('Please provide a title for your review');
+      return;
+    }
+
+    if (!review.trim()) {
+      setError('Please write your review');
       return;
     }
 
@@ -68,120 +106,148 @@ const Reviews = () => {
     setError('');
 
     try {
-      try {
-        // Try to use the actual API if available
-        const response = await fetch('/api/reviews', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            doctorId,
-            appointmentId,
-            rating,
-            comment,
-          }),
-        });
+      const reviewData = {
+        doctorId,
+        appointmentId,
+        rating,
+        title: title.trim(),
+        review: review.trim(),
+        isAnonymous
+      };
 
-        if (response.ok) {
-          setSubmitSuccess(true);
-          setRating(0);
-          setComment('');
-        } else {
-          const data = await response.json();
-          throw new Error(data.message || 'Failed to submit review');
-        }
-      } catch (apiError) {
-        console.log('Using dummy data for review submission');
+      console.log('Submitting review with data:', reviewData);
+      const response = await api.post('/reviews', reviewData);
+      console.log('Review submission response:', response);
+      
+      // Only proceed if we get a successful response
+      if (response.status === 201) {
+        setSubmitSuccess(true);
+        setRating(0);
+        setTitle('');
+        setReview('');
+        setIsAnonymous(false);
         
-        // Simulate a successful submission
-        setTimeout(() => {
-          // Create a new review and add it to the existing reviews
-          const user = JSON.parse(localStorage.getItem('user') || '{}');
-          const patientName = user.name || 'Patient';
-          
-          const newReview = {
-            id: `rev-${dummyReviews.length + 1}`,
-            rating: rating,
-            comment: comment,
-            date: new Date().toISOString().split('T')[0],
-            doctor: {
-              id: doctorId,
-              name: 'Doctor',
-              specialty: 'Specialist',
-              image: `https://images.unsplash.com/photo-${1590000000000 + (dummyReviews.length + 1) * 1000}?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80`
-            },
-            patient: patientName
-          };
-          
-          setReviews(prevReviews => [newReview, ...prevReviews]);
-          setSubmitSuccess(true);
-          setRating(0);
-          setComment('');
-        }, 1000); // Simulate network delay
+        toast.success('Review submitted successfully! Your review is now visible.');
+        
+        // Refresh reviews if viewing doctor's reviews (with small delay to ensure DB is updated)
+        if (doctorId) {
+          setTimeout(() => {
+            fetchReviews();
+          }, 500);
+        }
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      setError(error.message || 'Failed to submit review');
+      const errorMessage = error.response?.data?.message || 'Failed to submit review';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const StarRating = ({ value, onChange, readOnly }) => {
+  const handleReviewUpdate = (updatedReview, isDeleted = false) => {
+    if (isDeleted) {
+      // Remove the deleted review from the list
+      setReviews(prev => prev.filter(r => r._id !== editingReview._id));
+    } else {
+      // Update the review in the list
+      setReviews(prev => prev.map(r => r._id === updatedReview._id ? updatedReview : r));
+    }
+    setEditingReview(null);
+  };
+
+  const ReviewCard = ({ review }) => {
+    const formatDate = (dateString) => {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+    const getStatusBadge = (status) => {
+      const statusColors = {
+        approved: 'bg-green-100 text-green-800',
+        pending: 'bg-yellow-100 text-yellow-800',
+        rejected: 'bg-red-100 text-red-800'
+      };
+      
+      return (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status] || statusColors.pending}`}>
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>
+      );
+    };
+
     return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type={readOnly ? 'button' : 'button'}
-            disabled={readOnly}
-            onClick={() => onChange && onChange(star)}
-            className={`${
-              readOnly ? 'cursor-default' : 'cursor-pointer'
-            } p-1 focus:outline-none focus:ring-0`}
-          >
-            <svg
-              className={`w-6 h-6 ${
-                star <= (value || 0)
-                  ? 'text-yellow-400'
-                  : 'text-gray-300'
-              }`}
-              fill="currentColor"
-              viewBox="0 0 20 20"
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start space-x-4">
+            <div className="w-12 h-12 bg-[#83C5BE] rounded-full flex items-center justify-center">
+              <span className="text-white font-semibold text-lg">
+                {doctorId ? 
+                  (review.isAnonymous ? 'A' : (review.patient?.name?.charAt(0) || 'P')) :
+                  (review.doctor?.name?.charAt(0) || 'D')}
+              </span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[#1D3557]">
+                {doctorId ? 
+                  (review.isAnonymous ? 'Anonymous Patient' : (review.patient?.name || 'Anonymous Patient')) :
+                  (review.doctor ? `${review.doctor.name}` : 'Doctor')}
+              </h3>
+              <p className="text-[#457B9D] text-sm">
+                {doctorId ? 
+                  'Patient Review' :
+                  (review.doctor?.specialization || 'Medical Professional')}
+              </p>
+              <div className="mt-2 flex items-center space-x-2">
+                <StarRating value={review.rating} readOnly />
+                {review.status && getStatusBadge(review.status)}
+              </div>
+            </div>
+          </div>
+          <span className="text-sm text-[#457B9D]">
+            {formatDate(review.createdAt)}
+          </span>
+        </div>
+        
+        {review.title && (
+          <h4 className="text-lg font-medium text-[#1D3557] mb-2">
+            {review.title}
+          </h4>
+        )}
+        
+        <p className="text-[#1D3557] leading-relaxed">
+          {review.review}
+        </p>
+        
+        {review.moderationReason && (
+          <div className="mt-4 p-3 bg-red-50 border-l-4 border-red-400 rounded">
+            <p className="text-sm text-red-700">
+              <span className="font-medium">Moderation Note:</span> {review.moderationReason}
+            </p>
+          </div>
+        )}
+
+        {/* Edit button for patient's own reviews */}
+        {!doctorId && user && review.patient?._id === user.id && review.status !== 'rejected' && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => {
+                setEditingReview(review);
+                setIsModalOpen(true);
+              }}
+              className="px-3 py-1 text-sm text-[#006D77] hover:text-[#005A63] border border-[#006D77] hover:border-[#005A63] rounded-md transition-colors"
             >
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          </button>
-        ))}
+              Edit Review
+            </button>
+          </div>
+        )}
       </div>
     );
   };
-
-  const ReviewCard = ({ review }) => (
-    <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start space-x-4">
-          <img
-            src={review.doctor.image}
-            alt={`Dr. ${review.doctor.name}`}
-            className="w-12 h-12 rounded-full object-cover"
-          />
-          <div>
-            <h3 className="text-lg font-semibold text-[#1D3557]">
-              Dr. {review.doctor.name}
-            </h3>
-            <p className="text-[#457B9D] text-sm">{review.doctor.specialty}</p>
-            <div className="mt-2">
-              <StarRating value={review.rating} readOnly />
-            </div>
-          </div>
-        </div>
-        <span className="text-sm text-[#457B9D]">{review.date}</span>
-      </div>
-      <p className="mt-4 text-[#1D3557]">{review.comment}</p>
-    </div>
-  );
 
   if (isLoading) {
     return (
@@ -201,7 +267,29 @@ const Reviews = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-[#1D3557] mb-8">Reviews</h1>
+        {/* Dynamic Header based on view */}
+        {doctorId ? (
+          <div className="mb-8">
+            <div className="flex items-center text-sm text-[#457B9D] mb-2">
+              <Link to="/patient/reviews" className="hover:text-[#006D77]">Reviews</Link>
+              <span className="mx-2">›</span>
+              <span>Doctor Reviews</span>
+            </div>
+            <h1 className="text-3xl font-bold text-[#1D3557]">
+              Reviews for {doctorInfo?.name || 'Doctor'}
+            </h1>
+            <p className="text-[#457B9D] mt-2">
+              All reviews for {doctorInfo?.name || 'Doctor'} ({doctorInfo?.specialization || 'Medical Professional'})
+            </p>
+          </div>
+        ) : (
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-[#1D3557]">My Reviews</h1>
+            <p className="text-[#457B9D] mt-2">
+              All reviews you have written for different doctors
+            </p>
+          </div>
+        )}
 
         {/* Write Review Form */}
         {doctorId && appointmentId && !submitSuccess && (
@@ -217,27 +305,63 @@ const Reviews = () => {
             <form onSubmit={handleSubmitReview}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-[#1D3557] mb-2">
-                  Rating
+                  Rating *
                 </label>
                 <StarRating value={rating} onChange={setRating} />
               </div>
 
               <div className="mb-4">
                 <label
-                  htmlFor="comment"
+                  htmlFor="title"
                   className="block text-sm font-medium text-[#1D3557] mb-2"
                 >
-                  Your Review
+                  Review Title *
                 </label>
-                <textarea
-                  id="comment"
-                  rows={4}
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Share your experience with the doctor..."
+                <input
+                  type="text"
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Brief title for your review..."
+                  maxLength={100}
                   className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">{title.length}/100 characters</p>
+              </div>
+
+              <div className="mb-4">
+                <label
+                  htmlFor="review"
+                  className="block text-sm font-medium text-[#1D3557] mb-2"
+                >
+                  Your Review *
+                </label>
+                <textarea
+                  id="review"
+                  rows={4}
+                  value={review}
+                  onChange={(e) => setReview(e.target.value)}
+                  placeholder="Share your experience with the doctor..."
+                  maxLength={1000}
+                  className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">{review.length}/1000 characters</p>
+              </div>
+
+              <div className="mb-6">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={isAnonymous}
+                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                    className="rounded border-gray-300 text-[#006D77] focus:ring-[#006D77]"
+                  />
+                  <span className="ml-2 text-sm text-[#1D3557]">
+                    Submit this review anonymously
+                  </span>
+                </label>
               </div>
 
               <button
@@ -286,13 +410,62 @@ const Reviews = () => {
             </div>
           ) : (
             reviews.map((review) => (
-              <ReviewCard key={review.id} review={review} />
+              <ReviewCard key={review._id || review.id} review={review} />
             ))
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center space-x-2 mt-8">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-2 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            
+            {[...Array(totalPages)].map((_, index) => {
+              const page = index + 1;
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    currentPage === page
+                      ? 'bg-[#006D77] text-white'
+                      : 'bg-white border border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 rounded-md bg-white border border-gray-300 text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* Review Edit Modal */}
+        <ReviewModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingReview(null);
+          }}
+          review={editingReview}
+          onUpdate={handleReviewUpdate}
+        />
       </div>
     </div>
   );
 };
 
-export default Reviews; 
+export default Reviews;

@@ -100,14 +100,10 @@ class DoctorService {
         });
       }
 
-      // Add computed fields
+      // Add computed fields - use actual ratings from user model
       pipeline.push({
         $addFields: {
-          // Add ratings field (you can implement this based on reviews)
-          ratings: {
-            average: 4.5, // Default rating - you can calculate from reviews
-            count: 0
-          }
+          ratings: '$user.ratings'
         }
       });
 
@@ -350,11 +346,7 @@ class DoctorService {
         },
         {
           $addFields: {
-            // Add ratings field (you can implement this based on reviews)
-            ratings: {
-              average: 4.5, // Default rating - you can calculate from reviews
-              count: 0
-            }
+            ratings: '$user.ratings'
           }
         },
         {

@@ -9,6 +9,7 @@ const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: [
+      'APPOINTMENT_BOOKED',
       'APPOINTMENT_REMINDER',
       'APPOINTMENT_CONFIRMED',
       'APPOINTMENT_CANCELLED',
@@ -16,7 +17,8 @@ const notificationSchema = new mongoose.Schema({
       'DOCTOR_VERIFIED',
       'DOCTOR_REJECTED',
       'PAYMENT_RECEIVED',
-      'PAYMENT_FAILED'
+      'PAYMENT_FAILED',
+      'REVIEW_RECEIVED'
     ],
     required: true
   },

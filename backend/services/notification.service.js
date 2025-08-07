@@ -15,6 +15,18 @@ class NotificationService {
         let emailData;
 
         switch (data.type) {
+          case 'APPOINTMENT_BOOKED':
+            emailTemplate = 'appointmentBooked';
+            emailData = {
+              doctorName: recipient.name,
+              patientName: data.patientName,
+              date: data.date,
+              time: data.time,
+              type: data.appointmentType,
+              reason: data.reason
+            };
+            break;
+
           case 'APPOINTMENT_CONFIRMED':
             emailTemplate = 'appointmentConfirmed';
             emailData = {

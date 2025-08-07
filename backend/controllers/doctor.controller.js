@@ -1,4 +1,6 @@
 import DoctorService from '../services/doctor.service.js';
+import Appointment from '../models/appointment.model.js';
+import User from '../models/user.model.js';
 
 // Search doctors with filters
 export const searchDoctors = async (req, res) => {
@@ -98,6 +100,108 @@ export const getDoctorById = async (req, res) => {
     res.json(doctor);
   } catch (error) {
     console.error('Get doctor by ID error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Get doctor dashboard stats
+export const getDoctorStats = async (req, res) => {
+  try {
+    const doctorId = req.user.id; // Doctor's user ID
+    
+    // Get today's date range
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    
+    // Get upcoming appointments (from tomorrow onwards)
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    
+    // Run all queries in parallel for better performance
+    const [
+      todayAppointments,
+      totalPatients,
+      upcomingAppointments,
+      doctorUser
+    ] = await Promise.all([
+      // Today's appointments count
+      Appointment.countDocuments({
+        doctor: doctorId,
+        startTime: { $gte: startOfDay, $lt: endOfDay },
+        status: { $in: ['scheduled', 'pending'] }
+      }),
+      
+      // Total unique patients count
+      Appointment.distinct('patient', {
+        doctor: doctorId,
+        status: { $in: ['scheduled', 'completed', 'pending'] }
+      }).then(patients => patients.length),
+      
+      // Upcoming appointments count (from tomorrow onwards)
+      Appointment.countDocuments({
+        doctor: doctorId,
+        startTime: { $gte: tomorrow },
+        status: { $in: ['scheduled', 'pending'] }
+      }),
+      
+      // Get doctor's user info for rating
+      User.findById(doctorId).select('ratings')
+    ]);
+
+    const stats = {
+      todayAppointments,
+      totalPatients,
+      upcomingAppointments,
+      averageRating: doctorUser?.ratings?.average || 0
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Get doctor stats error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Get doctor's today appointments
+export const getDoctorTodayAppointments = async (req, res) => {
+  try {
+    const doctorId = req.user.id; // Doctor's user ID
+    
+    // Get today's date range
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    
+    // Get today's appointments with patient details
+    const appointments = await Appointment.find({
+      doctor: doctorId,
+      startTime: { $gte: startOfDay, $lt: endOfDay },
+      status: { $in: ['scheduled', 'pending'] }
+    })
+    .populate('patient', 'name email')
+    .sort({ startTime: 1 })
+    .limit(10);
+
+    // Format appointments for frontend
+    const formattedAppointments = appointments.map(appointment => ({
+      id: appointment._id,
+      patient: {
+        name: appointment.patient?.name || 'Unknown Patient',
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(appointment.patient?.name || 'U')}&background=83C5BE&color=fff`
+      },
+      type: appointment.type,
+      time: appointment.startTime.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      }),
+      status: appointment.status,
+      reason: appointment.reason
+    }));
+
+    res.json(formattedAppointments);
+  } catch (error) {
+    console.error('Get doctor today appointments error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 }; 

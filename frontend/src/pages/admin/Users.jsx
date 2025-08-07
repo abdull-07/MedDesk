@@ -11,27 +11,52 @@ const Users = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch('/api/admin/users');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        const queryParams = new URLSearchParams({
+          role: selectedRole,
+          search: searchQuery
+        });
+
+        const response = await fetch(`/api/admin/users?${queryParams}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        setUsers(data);
+        setUsers(Array.isArray(data.users) ? data.users : []);
       } catch (error) {
         console.error('Error fetching users:', error);
         setError('Failed to load users');
+        setUsers([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchUsers();
-  }, []);
+  }, [selectedRole, searchQuery]);
 
   const handleStatusChange = async (userId, newStatus) => {
     try {
-      // TODO: Replace with actual API call
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
       const response = await fetch(`/api/admin/users/${userId}/status`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus }),
@@ -40,22 +65,30 @@ const Users = () => {
       if (response.ok) {
         setUsers(currentUsers =>
           currentUsers.map(user =>
-            user.id === userId ? { ...user, status: newStatus } : user
+            user._id === userId ? { ...user, status: newStatus } : user
           )
         );
+        alert('User status updated successfully');
+      } else {
+        throw new Error('Failed to update user status');
       }
     } catch (error) {
       console.error('Error updating user status:', error);
-      alert('Failed to update user status');
+      alert(`Failed to update user status: ${error.message}`);
     }
   };
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      // TODO: Replace with actual API call
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
       const response = await fetch(`/api/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ role: newRole }),
@@ -64,14 +97,25 @@ const Users = () => {
       if (response.ok) {
         setUsers(currentUsers =>
           currentUsers.map(user =>
-            user.id === userId ? { ...user, role: newRole } : user
+            user._id === userId ? { ...user, role: newRole } : user
           )
         );
+        alert('User role updated successfully');
+      } else {
+        throw new Error('Failed to update user role');
       }
     } catch (error) {
       console.error('Error updating user role:', error);
-      alert('Failed to update user role');
+      alert(`Failed to update user role: ${error.message}`);
     }
+  };
+
+  // Helper function to determine user status (same logic as in UserRow)
+  const getUserStatus = (user) => {
+    if (user.role === 'doctor' && !user.isVerified) {
+      return 'pending';
+    }
+    return user.status || 'active';
   };
 
   const filteredUsers = users.filter(user => {
@@ -79,55 +123,66 @@ const Users = () => {
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
-    const matchesStatus = selectedStatus === 'all' || user.status === selectedStatus;
+    const userStatus = getUserStatus(user);
+    const matchesStatus = selectedStatus === 'all' || userStatus === selectedStatus;
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const UserRow = ({ user }) => (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <img
-            src={user.avatar}
-            alt={user.name}
-            className="w-10 h-10 rounded-full"
-          />
-          <div className="ml-4">
-            <div className="text-sm font-medium text-[#1D3557]">{user.name}</div>
-            <div className="text-sm text-[#457B9D]">{user.email}</div>
+  const UserRow = ({ user }) => {
+    // Determine user status based on available data
+    const getUserStatus = (user) => {
+      if (user.role === 'doctor' && !user.isVerified) {
+        return 'pending';
+      }
+      return user.status || 'active';
+    };
+
+    const userStatus = getUserStatus(user);
+
+    return (
+      <tr className="hover:bg-gray-50">
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-[#006D77] flex items-center justify-center">
+              <span className="text-white font-medium text-sm">
+                {user.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="ml-4">
+              <div className="text-sm font-medium text-[#1D3557]">{user.name}</div>
+              <div className="text-sm text-[#457B9D]">{user.email}</div>
+            </div>
           </div>
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <select
-          value={user.role}
-          onChange={(e) => handleRoleChange(user.id, e.target.value)}
-          className="rounded-md border-gray-300 text-sm focus:ring-[#006D77] focus:border-[#006D77]"
-        >
-          <option value="user">User</option>
-          <option value="doctor">Doctor</option>
-          <option value="admin">Admin</option>
-        </select>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <select
-          value={user.status}
-          onChange={(e) => handleStatusChange(user.id, e.target.value)}
-          className="rounded-md border-gray-300 text-sm focus:ring-[#006D77] focus:border-[#006D77]"
-        >
-          <option value="active">Active</option>
-          <option value="blocked">Blocked</option>
-          <option value="pending">Pending</option>
-        </select>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#457B9D]">
-        {new Date(user.lastLogin).toLocaleDateString()}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#457B9D]">
-        {new Date(user.createdAt).toLocaleDateString()}
-      </td>
-    </tr>
-  );
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+            ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+              user.role === 'doctor' ? 'bg-blue-100 text-blue-800' :
+              'bg-green-100 text-green-800'}`}
+          >
+            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <select
+            value={userStatus}
+            onChange={(e) => handleStatusChange(user._id, e.target.value)}
+            className="rounded-md border-gray-300 text-sm focus:ring-[#006D77] focus:border-[#006D77]"
+          >
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+            <option value="pending">Pending</option>
+          </select>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#457B9D]">
+          {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#457B9D]">
+          {new Date(user.createdAt).toLocaleDateString()}
+        </td>
+      </tr>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -197,9 +252,8 @@ const Users = () => {
               className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
             >
               <option value="all">All Roles</option>
-              <option value="user">User</option>
+              <option value="patient">Patient</option>
               <option value="doctor">Doctor</option>
-              <option value="admin">Admin</option>
             </select>
           </div>
           <div>
@@ -251,7 +305,7 @@ const Users = () => {
                   </tr>
                 ) : (
                   filteredUsers.map((user) => (
-                    <UserRow key={user.id} user={user} />
+                    <UserRow key={user._id} user={user} />
                   ))
                 )}
               </tbody>

@@ -78,8 +78,8 @@ const Navbar = () => {
     { to: '/admin/users', label: 'Users', icon: FaUsers },
     { to: '/admin/appointments', label: 'Appointments', icon: FaCalendarCheck },
     { to: '/admin/reports', label: 'Reports', icon: FaChartBar },
-    { to: '/admin/logs', label: 'Logs', icon: FaClipboardList },
-    { to: '/admin/settings', label: 'Settings', icon: FaCog }
+    // { to: '/admin/logs', label: 'Logs', icon: FaClipboardList },
+    // { to: '/admin/settings', label: 'Settings', icon: FaCog }
   ];
 
   // Navbar for Docturs
@@ -198,14 +198,14 @@ const Navbar = () => {
                   <div className="py-1">
                     {isAdmin ? (
                       <>
-                        <Link
+                        {/* <Link
                           to="/admin/dashboard"
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           onClick={() => setIsDropdownOpen(false)}
                         >
                           <FaTachometerAlt className="mr-2 h-4 w-4" />
                           Dashboard
-                        </Link>
+                        </Link> */}
                         <Link
                           to="/admin/settings"
                           className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

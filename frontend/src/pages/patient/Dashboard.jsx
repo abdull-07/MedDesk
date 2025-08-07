@@ -33,15 +33,17 @@ const Dashboard = () => {
         }
 
         try {
-          const doctorsRes = await api.get('/patient/doctors');
+          const doctorsRes = await api.get('/doctors/search?limit=5');
           const { doctors } = doctorsRes.data;
-          // Take first 5 doctors for the dashboard
-          doctorsData = doctors.slice(0, 5).map(doctor => ({
+          // Format doctors for the dashboard
+          doctorsData = doctors.map(doctor => ({
             _id: doctor._id,
             name: doctor.name,
             specialization: doctor.specialization,
             clinicName: doctor.clinicName,
-            ratings: doctor.ratings
+            ratings: doctor.ratings,
+            experience: doctor.experience,
+            consultationFee: doctor.consultationFee
           }));
         } catch (doctorsError) {
           console.log('Error fetching doctors:', doctorsError);
@@ -88,7 +90,7 @@ const Dashboard = () => {
         </div>
       </div>
       <div>
-        <h4 className="text-lg font-medium text-[#1D3557]">Dr. {doctor.name}</h4>
+        <h4 className="text-lg font-medium text-[#1D3557]">{doctor.name}</h4>
         <p className="text-sm text-[#457B9D]">{doctor.specialization}</p>
         <p className="text-sm text-[#457B9D]">{doctor.clinicName}</p>
       </div>
@@ -114,12 +116,12 @@ const Dashboard = () => {
 
     return (
       <Link
-        to={`/patient/appointments/${appointment._id}`}
+        to="/patient/appointments"
         className="block p-4 rounded-lg border border-gray-200 hover:border-[#006D77] bg-white hover:shadow-md transition-all duration-300"
       >
         <div className="flex items-start justify-between">
           <div>
-            <h4 className="text-lg font-medium text-[#1D3557]">Dr. {appointment.doctor.name}</h4>
+            <h4 className="text-lg font-medium text-[#1D3557]">{appointment.doctor.name}</h4>
             <p className="text-sm text-[#457B9D]">{appointment.doctor.specialization}</p>
             <div className="mt-2 space-y-1">
               <div className="flex items-center text-sm text-gray-600">

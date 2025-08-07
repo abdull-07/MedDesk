@@ -35,7 +35,7 @@ const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => 
       const response = await api.get(`/doctors/${doctorId}`);
       console.log('BookAppointment: Doctor response:', response.data);
       const doctorData = response.data;
-      
+
       if (doctorData) {
         setDoctor({
           id: doctorData._id,
@@ -61,36 +61,36 @@ const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => 
 
   const fetchAvailableSlots = async () => {
     if (!selectedDate) return;
-    
+
     setIsLoadingSlots(true);
     setError('');
-    
+
     try {
       console.log('BookAppointment: Fetching slots for doctor ID:', doctorId, 'on date:', selectedDate);
       const response = await api.get(`/bookings/doctors/${doctorId}/availability?date=${selectedDate}`);
       console.log('BookAppointment: Availability response:', response.data);
       const { slots } = response.data;
-      
+
       if (!slots || slots.length === 0) {
         console.log('BookAppointment: No slots returned from backend');
         setAvailableSlots([]);
         return;
       }
-      
+
       const formattedSlots = slots.map(slot => ({
         start: new Date(slot.start),
         end: new Date(slot.end),
-        display: `${new Date(slot.start).toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+        display: `${new Date(slot.start).toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: true 
-        })} - ${new Date(slot.end).toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+          hour12: true
+        })} - ${new Date(slot.end).toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: true 
+          hour12: true
         })}`
       }));
-      
+
       console.log('BookAppointment: Formatted slots:', formattedSlots);
       setAvailableSlots(formattedSlots);
     } catch (error) {
@@ -105,7 +105,7 @@ const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!selectedDate || !selectedSlot || !reason.trim()) {
       setError('Please fill in all required fields');
       return;
@@ -179,7 +179,7 @@ const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => 
     );
   }
 
-  const containerClass = isModal 
+  const containerClass = isModal
     ? "bg-white rounded-lg p-6 max-w-2xl mx-auto max-h-[90vh] overflow-y-auto"
     : "min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8";
 
@@ -217,21 +217,18 @@ const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => 
         {/* Progress Indicator */}
         <div className="mb-6">
           <div className="flex items-center">
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 1 ? 'bg-[#006D77] text-white' : 'bg-gray-200 text-gray-600'
-            }`}>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${step >= 1 ? 'bg-[#006D77] text-white' : 'bg-gray-200 text-gray-600'
+              }`}>
               1
             </div>
             <div className={`flex-1 h-1 mx-2 ${step >= 2 ? 'bg-[#006D77]' : 'bg-gray-200'}`}></div>
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 2 ? 'bg-[#006D77] text-white' : 'bg-gray-200 text-gray-600'
-            }`}>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${step >= 2 ? 'bg-[#006D77] text-white' : 'bg-gray-200 text-gray-600'
+              }`}>
               2
             </div>
             <div className={`flex-1 h-1 mx-2 ${step >= 3 ? 'bg-[#006D77]' : 'bg-gray-200'}`}></div>
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 3 ? 'bg-[#006D77] text-white' : 'bg-gray-200 text-gray-600'
-            }`}>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${step >= 3 ? 'bg-[#006D77] text-white' : 'bg-gray-200 text-gray-600'
+              }`}>
               3
             </div>
           </div>
@@ -316,11 +313,10 @@ const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => 
                         key={index}
                         type="button"
                         onClick={() => setSelectedSlot(slot)}
-                        className={`p-2 text-sm rounded-lg border transition-colors duration-200 ${
-                          selectedSlot === slot
-                            ? 'bg-[#006D77] text-white border-[#006D77]'
-                            : 'bg-white text-[#1D3557] border-gray-300 hover:border-[#006D77] hover:bg-[#F1FAEE]'
-                        }`}
+                        className={`p-2 text-sm rounded-lg border transition-colors duration-200 ${selectedSlot === slot
+                          ? 'bg-[#006D77] text-white border-[#006D77]'
+                          : 'bg-white text-[#1D3557] border-gray-300 hover:border-[#006D77] hover:bg-[#F1FAEE]'
+                          }`}
                       >
                         {slot.display}
                       </button>
@@ -365,11 +361,11 @@ const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => 
               <div className="flex justify-between">
                 <span className="text-[#457B9D]">Date:</span>
                 <span className="font-medium text-[#1D3557]">
-                  {new Date(selectedDate).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                  {new Date(selectedDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                   })}
                 </span>
               </div>

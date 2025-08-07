@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
+  const [allDoctors, setAllDoctors] = useState([]); // Store all doctors for filtering
+  const [specialties, setSpecialties] = useState([]); // Store unique specialties
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,13 +15,43 @@ const Doctors = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch('/api/admin/doctors');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        const response = await fetch('/api/admin/doctors', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        setDoctors(data);
+        const doctorsData = Array.isArray(data) ? data : [];
+
+        // Store all doctors
+        setAllDoctors(doctorsData);
+        setDoctors(doctorsData);
+
+        // Extract unique specialties from the doctors data
+        const uniqueSpecialties = [...new Set(
+          doctorsData
+            .map(doctor => doctor.specialization)
+            .filter(specialty => specialty && specialty.trim() !== '')
+        )].sort();
+
+        setSpecialties(uniqueSpecialties);
       } catch (error) {
         console.error('Error fetching doctors:', error);
         setError('Failed to load doctors');
+        setDoctors([]);
+        setAllDoctors([]);
+        setSpecialties([]);
       } finally {
         setIsLoading(false);
       }
@@ -30,37 +62,56 @@ const Doctors = () => {
 
   const handleVerificationAction = async (doctorId, action) => {
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/admin/doctors/${doctorId}/verify`, {
-        method: 'PUT',
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const endpoint = action === 'approve'
+        ? `/api/admin/doctors/${doctorId}/verify`
+        : `/api/admin/doctors/${doctorId}/reject`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ action }),
+        body: action === 'reject' ? JSON.stringify({ reason: 'Application rejected by admin' }) : undefined,
       });
 
       if (response.ok) {
+        // Update the local state
         setDoctors(currentDoctors =>
           currentDoctors.map(doctor =>
-            doctor.id === doctorId
-              ? { ...doctor, status: action === 'approve' ? 'verified' : 'rejected' }
+            doctor._id === doctorId
+              ? { ...doctor, isVerified: action === 'approve' }
               : doctor
           )
         );
         setIsModalOpen(false);
+
+        // Show success message
+        alert(`Doctor ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      } else {
+        throw new Error(`Failed to ${action} doctor`);
       }
     } catch (error) {
       console.error('Error updating doctor status:', error);
-      alert('Failed to update doctor status');
+      alert(`Failed to ${action} doctor: ${error.message}`);
     }
   };
 
   const filteredDoctors = doctors.filter(doctor => {
-    const matchesSearch = 
+    const matchesSearch =
       doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doctor.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = selectedStatus === 'all' || doctor.status === selectedStatus;
-    const matchesSpecialty = selectedSpecialty === 'all' || doctor.specialty === selectedSpecialty;
+
+    // Map backend status to frontend status
+    const doctorStatus = doctor.isVerified ? 'verified' : 'pending';
+    const matchesStatus = selectedStatus === 'all' || doctorStatus === selectedStatus;
+
+    const matchesSpecialty = selectedSpecialty === 'all' || doctor.specialization === selectedSpecialty;
     return matchesSearch && matchesStatus && matchesSpecialty;
   });
 
@@ -84,73 +135,122 @@ const Doctors = () => {
 
           <div className="space-y-6">
             <div className="flex items-center">
-              <img
-                src={doctor.avatar}
-                alt={doctor.name}
-                className="w-20 h-20 rounded-full"
-              />
+              <div className="w-20 h-20 rounded-full bg-[#006D77] flex items-center justify-center">
+                <span className="text-white font-bold text-2xl">
+                  {doctor.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
               <div className="ml-4">
                 <h4 className="text-lg font-medium text-[#1D3557]">{doctor.name}</h4>
                 <p className="text-[#457B9D]">{doctor.email}</p>
-                <p className="text-[#457B9D]">{doctor.specialty}</p>
+                <p className="text-[#457B9D]">{doctor.specialization || 'Not specified'}</p>
+                <p className="text-sm text-[#457B9D]">
+                  Status: {doctor.isVerified ? 'Verified' : 'Pending Verification'}
+                </p>
               </div>
             </div>
 
             <div>
-              <h5 className="font-medium text-[#1D3557] mb-2">Education</h5>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                {doctor.education.map((edu, index) => (
-                  <div key={index} className="mb-2 last:mb-0">
-                    <p className="font-medium">{edu.degree}</p>
-                    <p className="text-sm text-[#457B9D]">{edu.institution}</p>
-                    <p className="text-sm text-[#457B9D]">{edu.year}</p>
-                  </div>
-                ))}
+              <h5 className="font-medium text-[#1D3557] mb-2">Professional Information</h5>
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-[#1D3557]">Qualifications</p>
+                  <p className="text-sm text-[#457B9D]">{doctor.qualifications || 'Not provided'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#1D3557]">Clinic/Hospital</p>
+                  <p className="text-sm text-[#457B9D]">{doctor.clinicName || 'Not provided'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#1D3557]">Experience</p>
+                  <p className="text-sm text-[#457B9D]">
+                    {doctor.experience ? `${doctor.experience} years` : 'Not provided'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#1D3557]">Consultation Fee</p>
+                  <p className="text-sm text-[#457B9D]">
+                    {doctor.consultationFee ? `$${doctor.consultationFee}` : 'Not set'}
+                  </p>
+                </div>
               </div>
             </div>
 
             <div>
               <h5 className="font-medium text-[#1D3557] mb-2">License Information</h5>
               <div className="bg-gray-50 p-4 rounded-lg">
-                <p><span className="font-medium">License Number:</span> {doctor.license.number}</p>
-                <p><span className="font-medium">Issuing Authority:</span> {doctor.license.authority}</p>
-                <p><span className="font-medium">Valid Until:</span> {doctor.license.validUntil}</p>
+                <p><span className="font-medium">License Number:</span> {doctor.licenseNumber || 'Not provided'}</p>
+                <p><span className="font-medium">Registration Date:</span> {new Date(doctor.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
 
-            <div>
-              <h5 className="font-medium text-[#1D3557] mb-2">Documents</h5>
-              <div className="grid grid-cols-2 gap-4">
-                {doctor.documents.map((doc, index) => (
-                  <a
-                    key={index}
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center p-3 border rounded-lg hover:border-[#006D77]"
-                  >
-                    <svg className="w-6 h-6 text-[#006D77]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="ml-2 text-sm text-[#457B9D]">{doc.name}</span>
-                  </a>
-                ))}
+            {doctor.about && (
+              <div>
+                <h5 className="font-medium text-[#1D3557] mb-2">About</h5>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-[#457B9D]">{doctor.about}</p>
+                </div>
               </div>
-            </div>
+            )}
+
+            {doctor.services && doctor.services.length > 0 && (
+              <div>
+                <h5 className="font-medium text-[#1D3557] mb-2">Services</h5>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex flex-wrap gap-2">
+                    {doctor.services.map((service, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-[#E5F6F8] text-[#006D77] text-xs rounded-full"
+                      >
+                        {service}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {doctor.languages && doctor.languages.length > 0 && (
+              <div>
+                <h5 className="font-medium text-[#1D3557] mb-2">Languages</h5>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex flex-wrap gap-2">
+                    {doctor.languages.map((language, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                      >
+                        {language}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => handleVerificationAction(doctor.id, 'reject')}
-                className="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50"
-              >
-                Reject
-              </button>
-              <button
-                onClick={() => handleVerificationAction(doctor.id, 'approve')}
-                className="px-4 py-2 bg-[#006D77] text-white rounded-lg hover:bg-[#005c66]"
-              >
-                Approve
-              </button>
+              {!doctor.isVerified && (
+                <>
+                  <button
+                    onClick={() => handleVerificationAction(doctor._id, 'reject')}
+                    className="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => handleVerificationAction(doctor._id, 'approve')}
+                    className="px-4 py-2 bg-[#006D77] text-white rounded-lg hover:bg-[#005c66]"
+                  >
+                    Approve
+                  </button>
+                </>
+              )}
+              {doctor.isVerified && (
+                <span className="px-4 py-2 bg-green-100 text-green-800 rounded-lg">
+                  Already Verified
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -241,11 +341,11 @@ const Doctors = () => {
               className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
             >
               <option value="all">All Specialties</option>
-              <option value="cardiology">Cardiology</option>
-              <option value="dermatology">Dermatology</option>
-              <option value="neurology">Neurology</option>
-              <option value="pediatrics">Pediatrics</option>
-              <option value="psychiatry">Psychiatry</option>
+              {specialties.map((specialty) => (
+                <option key={specialty} value={specialty}>
+                  {specialty}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -281,53 +381,55 @@ const Doctors = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredDoctors.map((doctor) => (
-                    <tr key={doctor.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <img
-                            src={doctor.avatar}
-                            alt={doctor.name}
-                            className="w-10 h-10 rounded-full"
-                          />
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-[#1D3557]">
-                              {doctor.name}
+                  filteredDoctors.map((doctor) => {
+                    const doctorStatus = doctor.isVerified ? 'verified' : 'pending';
+                    return (
+                      <tr key={doctor._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 rounded-full bg-[#006D77] flex items-center justify-center">
+                              <span className="text-white font-medium text-sm">
+                                {doctor.name.charAt(0).toUpperCase()}
+                              </span>
                             </div>
-                            <div className="text-sm text-[#457B9D]">
-                              {doctor.email}
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-[#1D3557]">
+                                {doctor.name}
+                              </div>
+                              <div className="text-sm text-[#457B9D]">
+                                {doctor.email}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#457B9D]">
-                        {doctor.specialty}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                          ${doctor.status === 'verified' ? 'bg-green-100 text-green-800' :
-                            doctor.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'}`}
-                        >
-                          {doctor.status.charAt(0).toUpperCase() + doctor.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[#457B9D]">
-                        {new Date(doctor.appliedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => {
-                            setCurrentDoctor(doctor);
-                            setIsModalOpen(true);
-                          }}
-                          className="text-[#006D77] hover:text-[#83C5BE]"
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#457B9D]">
+                          {doctor.specialization || 'Not specified'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                            ${doctorStatus === 'verified' ? 'bg-green-100 text-green-800' :
+                              'bg-yellow-100 text-yellow-800'}`}
+                          >
+                            {doctorStatus.charAt(0).toUpperCase() + doctorStatus.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#457B9D]">
+                          {new Date(doctor.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <button
+                            onClick={() => {
+                              setCurrentDoctor(doctor);
+                              setIsModalOpen(true);
+                            }}
+                            className="text-[#006D77] hover:text-[#83C5BE]"
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

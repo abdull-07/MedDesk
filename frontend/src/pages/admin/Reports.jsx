@@ -39,18 +39,31 @@ const Reports = () => {
   useEffect(() => {
     const fetchReportData = async () => {
       try {
-        // TODO: Replace with actual API calls
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
+
         const [
           appointmentsResponse,
           revenueResponse,
           specialtiesResponse,
           userGrowthResponse,
         ] = await Promise.all([
-          fetch(`/api/admin/reports/appointments?range=${timeRange}`),
-          fetch(`/api/admin/reports/revenue?range=${timeRange}`),
-          fetch('/api/admin/reports/specialties'),
-          fetch(`/api/admin/reports/user-growth?range=${timeRange}`),
+          fetch(`/api/admin/reports/appointments?range=${timeRange}`, { headers }),
+          fetch(`/api/admin/reports/revenue?range=${timeRange}`, { headers }),
+          fetch('/api/admin/reports/specialties', { headers }),
+          fetch(`/api/admin/reports/user-growth?range=${timeRange}`, { headers }),
         ]);
+
+        if (!appointmentsResponse.ok || !revenueResponse.ok || !specialtiesResponse.ok || !userGrowthResponse.ok) {
+          throw new Error('Failed to fetch report data');
+        }
 
         const [
           appointmentsData,
@@ -65,14 +78,20 @@ const Reports = () => {
         ]);
 
         setReportData({
-          appointments: appointmentsData,
-          revenue: revenueData,
-          specialties: specialtiesData,
-          userGrowth: userGrowthData,
+          appointments: Array.isArray(appointmentsData) ? appointmentsData : [],
+          revenue: Array.isArray(revenueData) ? revenueData : [],
+          specialties: Array.isArray(specialtiesData) ? specialtiesData : [],
+          userGrowth: Array.isArray(userGrowthData) ? userGrowthData : [],
         });
       } catch (error) {
         console.error('Error fetching report data:', error);
         setError('Failed to load report data');
+        setReportData({
+          appointments: [],
+          revenue: [],
+          specialties: [],
+          userGrowth: [],
+        });
       } finally {
         setIsLoading(false);
       }

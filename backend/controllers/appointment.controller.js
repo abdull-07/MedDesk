@@ -3,6 +3,134 @@ import User from '../models/user.model.js';
 import NotificationService from '../services/notification.service.js';
 import DoctorService from '../services/doctor.service.js';
 
+// Helper function to validate status transitions
+const validateStatusTransition = (currentStatus, newStatus, userRole, patientId, doctorId, userId) => {
+  // Define valid transitions based on current status and user role
+  const transitions = {
+    'pending': {
+      'scheduled': { roles: ['doctor'], condition: (userId === doctorId) },
+      'cancelled': { roles: ['doctor', 'patient'], condition: (userId === doctorId || userId === patientId) }
+    },
+    'scheduled': {
+      'completed': { roles: ['doctor', 'patient'], condition: (userId === doctorId || userId === patientId) },
+      'cancelled': { roles: ['doctor', 'patient'], condition: (userId === doctorId || userId === patientId) },
+      'no-show': { roles: ['doctor'], condition: (userId === doctorId) }
+    },
+    'completed': {
+      // Completed appointments cannot be changed
+    },
+    'cancelled': {
+      // Cancelled appointments cannot be changed
+    },
+    'no-show': {
+      // No-show appointments cannot be changed
+    }
+  };
+
+  // Check if transition is defined
+  if (!transitions[currentStatus] || !transitions[currentStatus][newStatus]) {
+    return {
+      valid: false,
+      message: `Cannot change status from '${currentStatus}' to '${newStatus}'`
+    };
+  }
+
+  const transition = transitions[currentStatus][newStatus];
+
+  // Check if user role is allowed
+  if (!transition.roles.includes(userRole)) {
+    return {
+      valid: false,
+      message: `${userRole} is not authorized to change status to '${newStatus}'`
+    };
+  }
+
+  // Check specific conditions
+  if (!transition.condition) {
+    return {
+      valid: false,
+      message: 'You are not authorized to perform this action'
+    };
+  }
+
+  return { valid: true };
+};
+
+// Helper function to send notifications for status changes
+const sendStatusChangeNotifications = async (appointment, oldStatus, newStatus, user) => {
+  try {
+    const { date, time } = NotificationService.formatDateTime(appointment.startTime);
+    
+    // Determine notification recipients and messages based on status change
+    let notifications = [];
+
+    switch (newStatus) {
+      case 'scheduled':
+        if (oldStatus === 'pending') {
+          // Doctor approved the appointment
+          notifications.push({
+            recipient: appointment.patient._id,
+            type: 'APPOINTMENT_CONFIRMED',
+            title: 'Appointment Confirmed',
+            message: `Your appointment with Dr. ${appointment.doctor.name} on ${date} at ${time} has been confirmed.`,
+          });
+        }
+        break;
+
+      case 'completed':
+        // Appointment marked as completed
+        const otherPartyId = user.id === appointment.doctor._id.toString() 
+          ? appointment.patient._id 
+          : appointment.doctor._id;
+        const otherPartyName = user.id === appointment.doctor._id.toString() 
+          ? appointment.patient.name 
+          : `Dr. ${appointment.doctor.name}`;
+        
+        notifications.push({
+          recipient: otherPartyId,
+          type: 'APPOINTMENT_COMPLETED',
+          title: 'Appointment Completed',
+          message: `Your appointment with ${otherPartyName} on ${date} at ${time} has been marked as completed.`,
+        });
+        break;
+
+      case 'cancelled':
+        // Appointment cancelled (handled by existing cancelAppointment function)
+        break;
+
+      case 'no-show':
+        // Patient didn't show up
+        notifications.push({
+          recipient: appointment.patient._id,
+          type: 'APPOINTMENT_NO_SHOW',
+          title: 'Appointment Marked as No-Show',
+          message: `Your appointment with Dr. ${appointment.doctor.name} on ${date} at ${time} was marked as no-show.`,
+        });
+        break;
+    }
+
+    // Send all notifications
+    for (const notification of notifications) {
+      await NotificationService.createNotification({
+        ...notification,
+        relatedTo: {
+          model: 'Appointment',
+          id: appointment._id
+        },
+        doctorName: appointment.doctor.name,
+        patientName: appointment.patient.name,
+        date,
+        time,
+        appointmentType: appointment.type
+      });
+    }
+
+  } catch (error) {
+    console.error('Error sending status change notifications:', error);
+    // Don't throw error - notification failure shouldn't break status update
+  }
+};
+
 // Create new appointment
 export const createAppointment = async (req, res) => {
   try {
@@ -55,7 +183,7 @@ export const createAppointment = async (req, res) => {
       });
     }
 
-    // Create appointment - use the user ID, not the doctor profile ID
+    // Create appointment with 'pending' status - use the user ID, not the doctor profile ID
     const appointment = new Appointment({
       patient: req.user.id,
       doctor: doctorProfile.userId, // Use the userId from the doctor profile
@@ -63,7 +191,8 @@ export const createAppointment = async (req, res) => {
       endTime: appointmentEnd,
       type,
       reason,
-      fee
+      fee,
+      status: 'pending' // Set initial status as pending
     });
 
     await appointment.save();
@@ -77,9 +206,9 @@ export const createAppointment = async (req, res) => {
     // Create notification for doctor - use the user ID, not the doctor profile ID
     await NotificationService.createNotification({
       recipient: doctorProfile.userId,
-      type: 'APPOINTMENT_CONFIRMED',
-      title: 'New Appointment Scheduled',
-      message: `New appointment scheduled with ${patient.name} on ${date} at ${time}`,
+      type: 'APPOINTMENT_BOOKED',
+      title: 'New Appointment Request',
+      message: `New appointment request from ${patient.name} on ${date} at ${time}. Please review and approve.`,
       relatedTo: {
         model: 'Appointment',
         id: appointment._id
@@ -94,9 +223,9 @@ export const createAppointment = async (req, res) => {
     // Create notification for patient
     await NotificationService.createNotification({
       recipient: req.user.id,
-      type: 'APPOINTMENT_CONFIRMED',
-      title: 'Appointment Confirmed',
-      message: `Your appointment with Dr. ${doctor.name} is confirmed for ${date} at ${time}`,
+      type: 'APPOINTMENT_BOOKED',
+      title: 'Appointment Request Submitted',
+      message: `Your appointment request with Dr. ${doctor.name} for ${date} at ${time} has been submitted. Waiting for doctor's approval.`,
       relatedTo: {
         model: 'Appointment',
         id: appointment._id
@@ -201,10 +330,67 @@ export const getAppointmentById = async (req, res) => {
   }
 };
 
-// Update appointment (doctors only)
+// Update appointment status with proper workflow validation
+export const updateAppointmentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({
+        message: 'Status is required'
+      });
+    }
+
+    const appointment = await Appointment.findById(req.params.id)
+      .populate('patient', 'name email')
+      .populate('doctor', 'name email');
+    
+    if (!appointment) {
+      return res.status(404).json({
+        message: 'Appointment not found'
+      });
+    }
+
+    // Validate status transition based on current status and user role
+    const isValidTransition = validateStatusTransition(
+      appointment.status, 
+      status, 
+      req.user.role,
+      appointment.patient._id.toString(),
+      appointment.doctor._id.toString(),
+      req.user.id
+    );
+
+    if (!isValidTransition.valid) {
+      return res.status(400).json({
+        message: isValidTransition.message
+      });
+    }
+
+    const oldStatus = appointment.status;
+    appointment.status = status;
+    await appointment.save();
+
+    // Send notifications for status changes
+    await sendStatusChangeNotifications(appointment, oldStatus, status, req.user);
+
+    res.json({
+      message: 'Appointment status updated successfully',
+      appointment
+    });
+
+  } catch (error) {
+    console.error('Update appointment status error:', error);
+    res.status(500).json({
+      message: error.message || 'Internal server error'
+    });
+  }
+};
+
+// Update appointment (doctors only) - for notes and other fields
 export const updateAppointment = async (req, res) => {
   try {
-    const { status, notes } = req.body;
+    const { notes } = req.body;
     
     const appointment = await Appointment.findById(req.params.id);
     
@@ -221,9 +407,8 @@ export const updateAppointment = async (req, res) => {
       });
     }
 
-    // Update allowed fields
-    if (status) appointment.status = status;
-    if (notes) appointment.notes = notes;
+    // Update allowed fields (excluding status - use updateAppointmentStatus for that)
+    if (notes !== undefined) appointment.notes = notes;
 
     await appointment.save();
 

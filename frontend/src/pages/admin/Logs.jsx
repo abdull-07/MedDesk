@@ -13,16 +13,36 @@ const Logs = () => {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch(
-          `/api/admin/logs?page=${currentPage}&type=${selectedType}&date=${selectedDate}&search=${searchQuery}`
-        );
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Authentication token not found');
+        }
+
+        const queryParams = new URLSearchParams({
+          page: currentPage,
+          type: selectedType,
+          date: selectedDate,
+          search: searchQuery
+        });
+
+        const response = await fetch(`/api/admin/logs?${queryParams}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        setLogs(data.logs);
-        setTotalPages(data.totalPages);
+        setLogs(Array.isArray(data.logs) ? data.logs : []);
+        setTotalPages(data.totalPages || 1);
       } catch (error) {
         console.error('Error fetching logs:', error);
         setError('Failed to load audit logs');
+        setLogs([]);
       } finally {
         setIsLoading(false);
       }
@@ -188,11 +208,11 @@ const Logs = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <img
-                              src={log.user.avatar}
-                              alt={log.user.name}
-                              className="w-8 h-8 rounded-full"
-                            />
+                            <div className="w-8 h-8 rounded-full bg-[#006D77] flex items-center justify-center">
+                              <span className="text-white font-medium text-xs">
+                                {log.user.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
                             <div className="ml-3">
                               <div className="text-sm font-medium text-[#1D3557]">
                                 {log.user.name}

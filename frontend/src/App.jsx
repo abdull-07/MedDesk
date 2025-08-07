@@ -27,6 +27,7 @@
   import DoctorPatients from './pages/doctor/Patients';
   import DoctorProfile from './pages/doctor/Profile';
   import DoctorNotifications from './pages/doctor/Notifications';
+  import DoctorReviews from './pages/doctor/Reviews';
 
   // Patient Pages
   import PatientDashboard from './pages/patient/Dashboard';
@@ -45,6 +46,7 @@
   import AdminAppointments from './pages/admin/Appointments';
   import AdminReports from './pages/admin/Reports';
   import AdminLogs from './pages/admin/Logs';
+  import AdminSettings from './pages/admin/Settings';
 
   function App() {
     return (
@@ -100,6 +102,7 @@
                   <Route path="/doctor/schedule" element={<DoctorSchedule />} />
                   <Route path="/doctor/appointments" element={<DoctorAppointments />} />
                   <Route path="/doctor/patients" element={<DoctorPatients />} />
+                  <Route path="/doctor/reviews" element={<DoctorReviews />} />
                   <Route path="/doctor/profile" element={<DoctorProfile />} />
                   <Route path="/doctor/notifications" element={<DoctorNotifications />} />
                 </Route>
@@ -124,6 +127,7 @@
                   <Route path="/admin/appointments" element={<AdminAppointments />} />
                   <Route path="/admin/reports" element={<AdminReports />} />
                   <Route path="/admin/logs" element={<AdminLogs />} />
+                  <Route path="/admin/settings" element={<AdminSettings />} />
                 </Route>
 
                 {/* Catch-all route */}

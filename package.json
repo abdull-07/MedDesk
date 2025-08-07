@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@headlessui/react": "^2.2.4",
     "@stripe/stripe-js": "^7.4.0",
     "axios": "^1.10.0",
     "crypto": "^1.0.1"

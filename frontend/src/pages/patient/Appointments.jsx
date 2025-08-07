@@ -221,10 +221,6 @@ const Appointments = () => {
 
 
   const AppointmentCard = ({ appointment }) => {
-    const isUpcoming = new Date(appointment.startTime) > new Date();
-    const isPast = !isUpcoming && appointment.status !== 'cancelled';
-    const isCancelled = appointment.status === 'cancelled';
-
     const formatDate = (date) => {
       return new Date(date).toLocaleDateString('en-US', {
         weekday: 'long',
@@ -240,6 +236,39 @@ const Appointments = () => {
         minute: '2-digit'
       });
     };
+
+    // Status colors and labels
+    const getStatusDisplay = (status) => {
+      switch (status) {
+        case 'pending':
+          return {
+            label: 'Pending Approval',
+            className: 'bg-yellow-100 text-yellow-800'
+          };
+        case 'scheduled':
+          return {
+            label: 'Scheduled',
+            className: 'bg-green-100 text-green-800'
+          };
+        case 'completed':
+          return {
+            label: 'Completed',
+            className: 'bg-blue-100 text-blue-800'
+          };
+        case 'cancelled':
+          return {
+            label: 'Cancelled',
+            className: 'bg-red-100 text-red-800'
+          };
+        default:
+          return {
+            label: 'Unknown',
+            className: 'bg-gray-100 text-gray-800'
+          };
+      }
+    };
+
+    const statusDisplay = getStatusDisplay(appointment.status);
 
     return (
       <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
@@ -284,19 +313,13 @@ const Appointments = () => {
 
           <div className="mt-4 md:mt-0 md:ml-6 flex flex-col items-start md:items-end">
             <div className="mb-4">
-              <span
-                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${isCancelled
-                  ? 'bg-red-100 text-red-800'
-                  : isPast
-                    ? 'bg-gray-100 text-gray-800'
-                    : 'bg-green-100 text-green-800'
-                  }`}
-              >
-                {isCancelled ? 'Cancelled' : isPast ? 'Completed' : 'Upcoming'}
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusDisplay.className}`}>
+                {statusDisplay.label}
               </span>
             </div>
 
-            {isUpcoming && !isCancelled && (
+            {/* Action buttons based on status */}
+            {appointment.status === 'scheduled' && (
               <div className="flex flex-col space-y-2 w-full md:w-auto">
                 <button
                   onClick={() => handleRescheduleClick(appointment)}
@@ -313,13 +336,34 @@ const Appointments = () => {
               </div>
             )}
 
-            {isPast && (
+            {appointment.status === 'pending' && (
+              <div className="flex flex-col space-y-2 w-full md:w-auto">
+                <p className="text-sm text-[#457B9D] italic text-center">
+                  Awaiting doctor approval
+                </p>
+                <button
+                  onClick={() => handleCancelClick(appointment)}
+                  className="inline-flex items-center justify-center px-4 py-2 border border-red-500 text-sm font-medium rounded-md text-red-500 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-300"
+                >
+                  Cancel Request
+                </button>
+              </div>
+            )}
+
+            {appointment.status === 'completed' && (
               <Link
-                to={`/reviews?doctor=${appointment.doctor._id}&appointment=${appointment._id}`}
+                to={`/patient/reviews?doctor=${appointment.doctor._id}&appointment=${appointment._id}`}
                 className="inline-flex items-center justify-center px-4 py-2 border border-[#006D77] text-sm font-medium rounded-md text-[#006D77] hover:bg-[#E5F6F8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#83C5BE] transition-colors duration-300"
               >
                 Write Review
               </Link>
+            )}
+
+            {appointment.status === 'cancelled' && appointment.cancellationReason && (
+              <div className="text-sm text-red-600 italic max-w-xs">
+                <p className="font-medium">Reason:</p>
+                <p>{appointment.cancellationReason}</p>
+              </div>
             )}
           </div>
         </div>
@@ -343,16 +387,16 @@ const Appointments = () => {
   }
 
   const filteredAppointments = appointments.filter(appointment => {
-    const appointmentDate = new Date(appointment.startTime);
-    const isUpcoming = appointmentDate > new Date();
-
     if (activeTab === 'upcoming') {
-      return isUpcoming && appointment.status !== 'cancelled';
-    } else if (activeTab === 'past') {
-      return !isUpcoming && appointment.status !== 'cancelled';
-    } else {
+      return appointment.status === 'scheduled';
+    } else if (activeTab === 'pending') {
+      return appointment.status === 'pending';
+    } else if (activeTab === 'completed') {
+      return appointment.status === 'completed';
+    } else if (activeTab === 'cancelled') {
       return appointment.status === 'cancelled';
     }
+    return false;
   });
 
   return (
@@ -369,19 +413,24 @@ const Appointments = () => {
             {/* Tabs */}
             <div className="border-b border-gray-200 mb-6">
               <nav className="-mb-px flex space-x-8">
-                {['upcoming', 'past', 'cancelled'].map((tab) => (
+                {[
+                  { id: 'upcoming', label: 'Upcoming' },
+                  { id: 'pending', label: 'Pending' },
+                  { id: 'completed', label: 'Completed' },
+                  { id: 'cancelled', label: 'Cancelled' }
+                ].map((tab) => (
                   <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
                     className={`
                       py-4 px-1 border-b-2 font-medium text-sm
-                      ${activeTab === tab
+                      ${activeTab === tab.id
                         ? 'border-[#006D77] text-[#006D77]'
                         : 'border-transparent text-[#457B9D] hover:text-[#1D3557] hover:border-gray-300'
                       }
                     `}
                   >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    {tab.label}
                   </button>
                 ))}
               </nav>

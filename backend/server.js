@@ -12,14 +12,15 @@ import notificationRoutes from './routes/notification.routes.js';
 import doctorRoutes from './routes/doctor.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
+import patientRoutes from './routes/patient.routes.js';
 import ReminderService from './services/reminder.service.js';
 
 const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
     : ['http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
   optionsSuccessStatus: 200
@@ -47,6 +48,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/patients', patientRoutes);
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -99,6 +101,6 @@ connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     scheduleCronJobs();
-  }); 
-}); 
+  });
+});
 

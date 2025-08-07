@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../../utils/api';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -9,23 +10,41 @@ const Dashboard = () => {
     averageRating: 0,
   });
   const [appointments, setAppointments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // TODO: Replace with actual API calls
-        const [statsResponse, appointmentsResponse] = await Promise.all([
-          fetch('/api/doctor/stats'),
-          fetch('/api/doctor/appointments/today')
+        // Fetch all dashboard data in parallel
+        const [notificationsResponse, statsResponse, appointmentsResponse] = await Promise.all([
+          api.get('/notifications?limit=5').catch(err => {
+            console.error('Error fetching notifications:', err);
+            return { data: { notifications: [] } };
+          }),
+          api.get('/doctors/dashboard/stats').catch(err => {
+            console.error('Error fetching stats:', err);
+            return { data: { todayAppointments: 0, totalPatients: 0, upcomingAppointments: 0, averageRating: 0 } };
+          }),
+          api.get('/doctors/dashboard/today-appointments').catch(err => {
+            console.error('Error fetching appointments:', err);
+            return { data: [] };
+          })
         ]);
 
-        const statsData = await statsResponse.json();
-        const appointmentsData = await appointmentsResponse.json();
+        // Set notifications
+        setNotifications(notificationsResponse.data.notifications || []);
+        const unreadNotifications = notificationsResponse.data.notifications?.filter(n => !n.isRead) || [];
+        setUnreadCount(unreadNotifications.length);
 
-        setStats(statsData);
-        setAppointments(appointmentsData);
+        // Set stats
+        setStats(statsResponse.data);
+
+        // Set appointments
+        setAppointments(appointmentsResponse.data || []);
+
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setError('Failed to load dashboard data');
@@ -74,6 +93,86 @@ const Dashboard = () => {
       </div>
     </div>
   );
+
+  const NotificationCard = ({ notification }) => {
+    const formatDate = (dateString) => {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
+    const getNotificationIcon = (type) => {
+      switch (type) {
+        case 'APPOINTMENT_BOOKED':
+          return (
+            <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          );
+        case 'REVIEW_RECEIVED':
+          return (
+            <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+          );
+        default:
+          return (
+            <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          );
+      }
+    };
+
+    const handleMarkAsRead = async () => {
+      if (!notification.isRead) {
+        try {
+          await api.patch(`/notifications/${notification._id}/read`);
+          // Update local state
+          setNotifications(prev => 
+            prev.map(n => n._id === notification._id ? { ...n, isRead: true } : n)
+          );
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (error) {
+          console.error('Error marking notification as read:', error);
+        }
+      }
+    };
+
+    return (
+      <div 
+        className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+          !notification.isRead ? 'border-l-4 border-blue-500' : ''
+        }`}
+        onClick={handleMarkAsRead}
+      >
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            {getNotificationIcon(notification.type)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-medium text-[#1D3557] ${!notification.isRead ? 'font-semibold' : ''}`}>
+              {notification.title}
+            </p>
+            <p className="text-sm text-[#457B9D] mt-1 line-clamp-2">
+              {notification.message}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              {formatDate(notification.createdAt)}
+            </p>
+          </div>
+          {!notification.isRead && (
+            <div className="flex-shrink-0">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const QuickAction = ({ icon, title, description, to }) => (
     <Link
@@ -158,7 +257,7 @@ const Dashboard = () => {
           />
           <StatCard
             title="Average Rating"
-            value={`${stats.averageRating}/5`}
+            value={`${(stats.averageRating || 0).toFixed(1)}/5`}
             icon={
               <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -168,7 +267,7 @@ const Dashboard = () => {
           />
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-8 lg:grid-cols-3">
           {/* Today's Schedule */}
           <div>
             <div className="flex items-center justify-between mb-6">
@@ -188,6 +287,37 @@ const Dashboard = () => {
               ) : (
                 appointments.map((appointment) => (
                   <AppointmentCard key={appointment.id} appointment={appointment} />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Recent Notifications */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-[#1D3557]">
+                Recent Notifications
+                {unreadCount > 0 && (
+                  <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    {unreadCount} new
+                  </span>
+                )}
+              </h2>
+              <Link
+                to="/doctor/notifications"
+                className="text-sm font-medium text-[#006D77] hover:text-[#83C5BE] transition-colors duration-300"
+              >
+                View all
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {notifications.length === 0 ? (
+                <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                  <p className="text-[#457B9D]">No notifications yet</p>
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <NotificationCard key={notification._id} notification={notification} />
                 ))
               )}
             </div>
@@ -230,12 +360,29 @@ const Dashboard = () => {
               <QuickAction
                 icon={
                   <svg className="w-6 h-6 text-[#006D77]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                   </svg>
                 }
-                title="Notifications"
-                description="View appointment requests and updates"
-                to="/notifications"
+                title="Patient Reviews"
+                description="View and respond to patient feedback"
+                to="/doctor/reviews"
+              />
+              <QuickAction
+                icon={
+                  <div className="relative">
+                    <svg className="w-6 h-6 text-[#006D77]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                }
+                title="All Notifications"
+                description={`View all notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+                to="/doctor/notifications"
               />
             </div>
           </div>

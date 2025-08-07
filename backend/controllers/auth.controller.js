@@ -84,6 +84,10 @@ export const adminLogin = async (req, res) => {
       });
     }
 
+    // Update last login time
+    admin.lastLogin = new Date();
+    await admin.save();
+
     const token = generateToken({ 
       id: admin._id, 
       role: 'admin',
@@ -342,6 +346,10 @@ export const login = async (req, res) => {
     if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+
+    // Update last login time
+    user.lastLogin = new Date();
+    await user.save();
 
     // For doctors, check verification status
     if (user.role === 'doctor' && !user.isVerified) {

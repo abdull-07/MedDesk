@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import api from '../../utils/api';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -10,11 +11,12 @@ const Notifications = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch('/api/doctor/notifications');
-        const data = await response.json();
-        setNotifications(data.notifications);
-        setUnreadCount(data.unreadCount);
+        const response = await api.get('/notifications');
+        const notifications = response.data.notifications || [];
+        setNotifications(notifications);
+
+        const unreadNotifications = notifications.filter(n => !n.isRead);
+        setUnreadCount(unreadNotifications.length);
       } catch (error) {
         console.error('Error fetching notifications:', error);
         setError('Failed to load notifications');
@@ -28,110 +30,123 @@ const Notifications = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/doctor/notifications/${notificationId}/read`, {
-        method: 'PUT',
-      });
+      await api.patch(`/notifications/${notificationId}/read`);
 
-      if (response.ok) {
-        setNotifications(currentNotifications =>
-          currentNotifications.map(notification =>
-            notification.id === notificationId
-              ? { ...notification, read: true }
-              : notification
-          )
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
+      setNotifications(currentNotifications =>
+        currentNotifications.map(notification =>
+          notification._id === notificationId
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      alert('Failed to mark notification as read');
+      setError('Failed to mark notification as read');
     }
   };
 
   const markAllAsRead = async () => {
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/doctor/notifications/read-all', {
-        method: 'PUT',
-      });
+      await api.patch('/notifications/read-all');
 
-      if (response.ok) {
-        setNotifications(currentNotifications =>
-          currentNotifications.map(notification => ({
-            ...notification,
-            read: true,
-          }))
-        );
-        setUnreadCount(0);
-      }
+      setNotifications(currentNotifications =>
+        currentNotifications.map(notification => ({
+          ...notification,
+          isRead: true,
+        }))
+      );
+      setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      alert('Failed to mark all notifications as read');
+      setError('Failed to mark all notifications as read');
     }
   };
 
   const NotificationCard = ({ notification }) => {
-    const getIcon = () => {
-      switch (notification.type) {
-        case 'appointment_request':
+    const getNotificationIcon = (type) => {
+      switch (type) {
+        case 'APPOINTMENT_BOOKED':
           return (
-            <svg className="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           );
-        case 'cancellation':
+        case 'REVIEW_RECEIVED':
           return (
-            <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+          );
+        case 'APPOINTMENT_CANCELLED':
+          return (
+            <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           );
-        case 'rescheduling':
+        case 'APPOINTMENT_RESCHEDULED':
           return (
-            <svg className="w-6 h-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           );
         default:
           return (
-            <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
           );
       }
     };
 
+    const formatDate = (dateString) => {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
     return (
       <div
-        className={`bg-white rounded-lg shadow-sm p-6 ${
-          !notification.read ? 'border-l-4 border-[#006D77]' : ''
-        }`}
+        className={`bg-white rounded-lg shadow-sm p-6 cursor-pointer transition-all duration-200 hover:shadow-md ${!notification.isRead ? 'border-l-4 border-blue-500' : ''
+          }`}
+        onClick={() => !notification.isRead && markAsRead(notification._id)}
       >
-        <div className="flex items-start">
-          <div className="flex-shrink-0">{getIcon()}</div>
-          <div className="ml-4 flex-1">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            {getNotificationIcon(notification.type)}
+          </div>
+          <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <p
-                className={`text-sm font-medium ${
-                  notification.read ? 'text-[#457B9D]' : 'text-[#1D3557]'
-                }`}
-              >
+              <p className={`text-sm font-medium text-[#1D3557] ${!notification.isRead ? 'font-semibold' : ''}`}>
                 {notification.title}
               </p>
-              <p className="text-sm text-[#457B9D]">
-                {format(new Date(notification.timestamp), 'MMM d, h:mm a')}
+              <p className="text-xs text-gray-500">
+                {formatDate(notification.createdAt)}
               </p>
             </div>
-            <p className="mt-1 text-sm text-[#457B9D]">{notification.message}</p>
-            {!notification.read && (
+            <p className="text-sm text-[#457B9D] mt-1 line-clamp-2">
+              {notification.message}
+            </p>
+            {!notification.isRead && (
               <button
-                onClick={() => markAsRead(notification.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  markAsRead(notification._id);
+                }}
                 className="mt-2 text-sm text-[#006D77] hover:text-[#83C5BE] transition-colors duration-300"
               >
                 Mark as read
               </button>
             )}
           </div>
+          {!notification.isRead && (
+            <div className="flex-shrink-0">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            </div>
+          )}
         </div>
       </div>
     );

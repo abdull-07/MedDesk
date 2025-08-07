@@ -49,6 +49,14 @@ const reviewSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  doctorResponse: {
+    type: String,
+    trim: true,
+    maxLength: 500
+  },
+  responseDate: {
+    type: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now

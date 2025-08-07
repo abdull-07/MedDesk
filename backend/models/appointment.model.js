@@ -88,7 +88,7 @@ appointmentSchema.pre('save', function(next) {
 appointmentSchema.statics.checkForConflicts = async function(doctorId, startTime, endTime, excludeAppointmentId = null) {
   const query = {
     doctor: doctorId,
-    status: 'scheduled',
+    status: { $in: ['scheduled'] }, // Only check scheduled appointments for conflicts
     $or: [
       // New appointment starts during an existing appointment
       {
