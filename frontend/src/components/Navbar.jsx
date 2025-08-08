@@ -10,7 +10,18 @@ import {
   FaCalendarCheck,
   FaChartBar,
   FaClipboardList,
-  FaCog
+  FaCog,
+  FaHome,
+  FaInfoCircle,
+  FaStethoscope,
+  FaEnvelope,
+  FaChevronDown,
+  FaBars,
+  FaTimes,
+  FaUser,
+  FaCalendarAlt,
+  FaStar,
+  FaCreditCard
 } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -78,35 +89,31 @@ const Navbar = () => {
     { to: '/admin/users', label: 'Users', icon: FaUsers },
     { to: '/admin/appointments', label: 'Appointments', icon: FaCalendarCheck },
     { to: '/admin/reports', label: 'Reports', icon: FaChartBar },
-    // { to: '/admin/logs', label: 'Logs', icon: FaClipboardList },
-    // { to: '/admin/settings', label: 'Settings', icon: FaCog }
   ];
 
-  // Navbar for Docturs
+  // Navbar for Doctors
   const doctorLinks = [
-    { to: '/doctor/dashboard', label: 'Dashboard' },
-    { to: '/doctor/appointments', label: 'Appointments' },
-    { to: '/doctor/schedule', label: 'Schedule' },
-    { to: '/doctor/patients', label: 'Patients' },
-    // { to: '/doctor/profile', label: 'Profile' }
+    { to: '/doctor/dashboard', label: 'Dashboard', icon: FaTachometerAlt },
+    { to: '/doctor/appointments', label: 'Appointments', icon: FaCalendarCheck },
+    { to: '/doctor/schedule', label: 'Schedule', icon: FaCalendarAlt },
+    { to: '/doctor/patients', label: 'Patients', icon: FaUsers },
   ];
 
   // Navbar for patients
   const patientLinks = [
-    { to: '/patient/dashboard', label: 'Dashboard' },
-    { to: '/patient/doctors', label: 'Find Doctors' },
-    { to: '/patient/appointments', label: 'My Appointments' },
-    { to: '/patient/reviews', label: 'Reviews' },
-    // { to: '/patient/profile', label: 'My Profile' }
+    { to: '/patient/dashboard', label: 'Dashboard', icon: FaTachometerAlt },
+    { to: '/patient/doctors', label: 'Find Doctors', icon: FaStethoscope },
+    { to: '/patient/appointments', label: 'My Appointments', icon: FaCalendarCheck },
+    { to: '/patient/reviews', label: 'Reviews', icon: FaStar },
+    // { to: '/payment', label: 'Payment', icon: FaCreditCard },
   ];
-
 
   // Navbar for NON Login or unregister user.
   const publicLinks = [
-    { to: '/', label: 'Home' },
-    { to: '/about', label: 'About' },
-    { to: '/doctors', label: 'Find Doctors' },
-    { to: '/contact', label: 'Contact' }
+    { to: '/', label: 'Home', icon: FaHome },
+    { to: '/about', label: 'About', icon: FaInfoCircle },
+    { to: '/doctors', label: 'Find Doctors', icon: FaStethoscope },
+    { to: '/contact', label: 'Contact', icon: FaEnvelope },
   ];
 
   // Check if user is admin
@@ -153,100 +160,141 @@ const Navbar = () => {
   }, [user, location.pathname, navigate]);
 
   return (
-    <nav className="bg-[#006D77] text-white">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/30 backdrop-blur-lg border-b border-white/20 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center relative">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link to="/" className="text-xl font-bold">MedDesk</Link>
+            <Link to="/" className="flex items-center space-x-2 group">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-teal-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <FaStethoscope className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-2xl font-black text-slate-900 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-teal-600 transition-all duration-300">
+                MedDesk
+              </span>
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
-            {getNavLinks().map((link, index) => (
-              <Link
-                key={index}
-                to={link.to}
-                className={`${isAdmin
-                  ? 'text-white hover:bg-[#005660] px-4 py-2 rounded-md text-sm font-semibold transition-colors duration-200 flex items-center'
-                  : 'text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium'}
-                  ${location.pathname === link.to ? 'bg-[#005660]' : ''}`}
-              >
-                {isAdmin && link.icon && <link.icon className="mr-2 h-4 w-4" />}
-                {link.label}
-              </Link>
-            ))}
+          <div className="hidden md:flex items-center space-x-2">
+            {getNavLinks().map((link, index) => {
+              const isActive = location.pathname === link.to;
+              return (
+                <Link
+                  key={index}
+                  to={link.to}
+                  className={`group relative flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 ${isActive
+                      ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg transform scale-105'
+                      : 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
+                    }`}
+                >
+                  {link.icon && (
+                    <link.icon
+                      className={`w-4 h-4 transition-colors duration-300 ${isActive
+                          ? 'text-white'
+                          : 'text-slate-500 group-hover:text-blue-600'
+                        }`}
+                    />
+                  )}
+                  <span className="text-sm">{link.label}</span>
+                  {isActive && (
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
+                  )}
+                </Link>
+              );
+            })}
           </div>
 
-          {/* User Menu */}
+          {/* User / Auth Buttons */}
           {user ? (
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center space-x-2 ${isAdmin
-                  ? 'text-white bg-[#005660] hover:bg-[#004450] px-3 py-2 rounded-md transition-colors duration-200'
-                  : 'text-white hover:text-gray-200'
-                  }`}
-              >
-                <FaUserCircle className="h-6 w-6" />
-                <span className="font-semibold">
-                  {isAdmin ? 'Admin Panel' : user.name || user.role}
-                </span>
-              </button>
-              {isDropdownOpen && (
-                <div className="absolute right-4 top-16 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                  <div className="py-1">
-                    {isAdmin ? (
-                      <>
-                        {/* <Link
-                          to="/admin/dashboard"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setIsDropdownOpen(false)}
-                        >
-                          <FaTachometerAlt className="mr-2 h-4 w-4" />
-                          Dashboard
-                        </Link> */}
-                        <Link
-                          to="/admin/settings"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setIsDropdownOpen(false)}
-                        >
-                          <FaCog className="mr-2 h-4 w-4" />
-                          Settings
-                        </Link>
-                      </>
-                    ) : (
-                      <Link
-                        to={`/${user.role}/profile`}
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        <FaUserCircle className="mr-2 h-4 w-4" />
-                        Profile
-                      </Link>
-                    )}
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <FaSignOutAlt className="mr-2 h-4 w-4" />
-                      Sign Out
-                    </button>
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="group flex items-center space-x-3 bg-white/30 hover:bg-white/50 px-4 py-2 rounded-2xl border border-white/30 transition-all duration-300 hover:shadow-lg"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-teal-600 rounded-full flex items-center justify-center">
+                    <FaUserCircle className="w-5 h-5 text-white" />
                   </div>
-                </div>
-              )}
+                  <div className="text-left">
+                    <div className="text-sm font-semibold text-slate-900">
+                      {isAdmin ? 'Admin' : user.name || user.role}
+                    </div>
+                    <div className="text-xs text-slate-500 capitalize">
+                      {user.role}
+                    </div>
+                  </div>
+                  <FaChevronDown
+                    className={`w-3 h-3 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''
+                      }`}
+                  />
+                </button>
+
+                {/* Dropdown */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white/30 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-50">
+                    <div className="p-2">
+                      <div className="px-4 py-3 border-b border-white/20">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-teal-600 rounded-full flex items-center justify-center">
+                            <FaUserCircle className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-900">
+                              {isAdmin ? 'Administrator' : user.name || user.role}
+                            </div>
+                            <div className="text-sm text-slate-500 capitalize">
+                              {user.role} Account
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="py-2">
+                        {isAdmin ? (
+                          <Link
+                            to="/admin/settings"
+                            className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:text-slate-900 hover:bg-white/40 rounded-xl transition-all duration-200"
+                            onClick={() => setIsDropdownOpen(false)}
+                          >
+                            <FaCog className="w-4 h-4 text-slate-500" />
+                            <span className="font-medium">Settings</span>
+                          </Link>
+                        ) : (
+                          <Link
+                            to={`/${user.role}/profile`}
+                            className="flex items-center space-x-3 px-4 py-3 text-slate-700 hover:text-slate-900 hover:bg-white/40 rounded-xl transition-all duration-200"
+                            onClick={() => setIsDropdownOpen(false)}
+                          >
+                            <FaUser className="w-4 h-4 text-slate-500" />
+                            <span className="font-medium">My Profile</span>
+                          </Link>
+                        )}
+
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200"
+                        >
+                          <FaSignOutAlt className="w-4 h-4" />
+                          <span className="font-medium">Sign Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
-            <div className="flex items-center space-x-4">
+            <div className="hidden sm:flex items-center space-x-3">
               <Link
                 to="/sign-in"
-                className="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-slate-700 hover:text-slate-900 px-4 py-2 rounded-xl font-medium transition-colors duration-300"
               >
                 Sign In
               </Link>
               <Link
                 to="/sign-up"
-                className="bg-white text-[#006D77] hover:bg-gray-100 px-4 py-2 rounded-md text-sm font-medium"
+                className="bg-gradient-to-r from-blue-600 to-teal-600 text-white px-6 py-2 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105"
               >
                 Sign Up
               </Link>
@@ -256,63 +304,49 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2"
+            className="md:hidden p-2 rounded-xl bg-white/30 hover:bg-white/50 transition-colors duration-300"
             aria-label="Toggle menu"
           >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              {isOpen ? (
-                <path d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
+            {isOpen ? (
+              <FaTimes className="h-5 w-5 text-slate-700" />
+            ) : (
+              <FaBars className="h-5 w-5 text-slate-700" />
+            )}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="md:hidden py-4">
-            <div className="flex flex-col space-y-4">
-              {getNavLinks().map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`${isAdmin
-                    ? 'text-white hover:bg-[#005660] px-4 py-2 rounded-md font-semibold flex items-center'
-                    : 'hover:text-[#E5F6F8]'
-                    } transition-colors ${location.pathname === link.to ? (isAdmin ? 'bg-[#005660]' : 'text-[#E5F6F8]') : ''
-                    }`}
-                  onClick={() => setIsOpen(false)}
-                >
-                  {isAdmin && link.icon && <link.icon className="mr-2 h-4 w-4" />}
-                  {link.label}
-                </Link>
-              ))}
-              <div className="pt-4 border-t border-[#83C5BE]">
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsOpen(false);
-                  }}
-                  className="flex items-center text-left hover:text-[#E5F6F8] transition-colors"
-                >
-                  <FaSignOutAlt className="w-5 h-5 mr-2" />
-                  Sign Out
-                </button>
-              </div>
+          <div className="md:hidden absolute top-full left-0 right-0 bg-blue-100 backdrop-blur-lg border-b border-white/20 shadow-lg">
+            <div className="p-4 space-y-2">
+              {getNavLinks().map((link) => {
+                const isActive = location.pathname === link.to;
+                return (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${isActive
+                        ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
+                      }`}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {link.icon && (
+                      <link.icon
+                        className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500'
+                          }`}
+                      />
+                    )}
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
       </div>
     </nav>
+
   );
 };
 

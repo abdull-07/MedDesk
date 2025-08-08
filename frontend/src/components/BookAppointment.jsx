@@ -181,7 +181,7 @@ const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => 
 
   const containerClass = isModal
     ? "bg-white rounded-lg p-6 max-w-2xl mx-auto max-h-[90vh] overflow-y-auto"
-    : "min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8";
+    : "min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 pt-[120px] sm:pt-24 lg:pt-[120px]";
 
   return (
     <div className={containerClass}>

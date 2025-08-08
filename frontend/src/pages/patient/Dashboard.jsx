@@ -212,7 +212,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 pt-[120px] sm:pt-24 lg:pt-[120px]">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-[#1D3557] mb-8">Welcome Back, {userName}</h1>
 

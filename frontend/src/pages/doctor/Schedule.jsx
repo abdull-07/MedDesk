@@ -460,60 +460,7 @@ const Schedule = () => {
     );
   };
 
-  const WorkingHoursForm = () => (
-    <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-      <h2 className="text-lg font-semibold text-[#1D3557] mb-4">Working Hours</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-[#457B9D] mb-2">
-            Start Time
-          </label>
-          <input
-            type="time"
-            value={workingHours.start}
-            onChange={(e) =>
-              updateWorkingHours({ ...workingHours, start: e.target.value })
-            }
-            className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[#457B9D] mb-2">
-            End Time
-          </label>
-          <input
-            type="time"
-            value={workingHours.end}
-            onChange={(e) =>
-              updateWorkingHours({ ...workingHours, end: e.target.value })
-            }
-            className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[#457B9D] mb-2">
-            Slot Duration (minutes)
-          </label>
-          <select
-            value={workingHours.slotDuration}
-            onChange={(e) =>
-              updateWorkingHours({
-                ...workingHours,
-                slotDuration: parseInt(e.target.value),
-              })
-            }
-            className="w-full rounded-lg border-gray-300 focus:ring-[#006D77] focus:border-[#006D77]"
-          >
-            <option value={15}>15 minutes</option>
-            <option value={30}>30 minutes</option>
-            <option value={45}>45 minutes</option>
-            <option value={60}>1 hour</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  );
-
+  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
@@ -528,7 +475,7 @@ const Schedule = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8 pt-[120px] sm:pt-24 lg:pt-[120px]">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
           <h1 className="text-3xl font-bold text-[#1D3557]">Manage Schedule</h1>
