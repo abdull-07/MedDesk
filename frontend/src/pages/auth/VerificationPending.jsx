@@ -11,15 +11,15 @@ const VerificationPending = () => {
     minutes: 0,
     seconds: 0
   });
-
+  
   // Calculate estimated verification date (2 business days from registration)
   const calculateEstimatedVerificationDate = (createdAt) => {
     const registrationDate = new Date(createdAt);
-
+    
     // Add 2 business days (skip weekends)
     let businessDaysToAdd = 2;
     const estimatedDate = new Date(registrationDate);
-
+    
     while (businessDaysToAdd > 0) {
       estimatedDate.setDate(estimatedDate.getDate() + 1);
       // Skip weekends (0 = Sunday, 6 = Saturday)
@@ -27,76 +27,76 @@ const VerificationPending = () => {
         businessDaysToAdd--;
       }
     }
-
+    
     // Set time to end of business day (5:00 PM)
     estimatedDate.setHours(17, 0, 0, 0);
-
+    
     return estimatedDate;
   };
-
+  
   // Calculate time remaining until verification
   const calculateTimeRemaining = (estimatedDate) => {
     const now = new Date();
     const difference = estimatedDate - now;
-
+    
     // If the estimated date has passed, return zeros
     if (difference <= 0) {
       return { days: 0, hours: 0, minutes: 0, seconds: 0 };
     }
-
+    
     const days = Math.floor(difference / (1000 * 60 * 60 * 24));
     const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
+    
     return { days, hours, minutes, seconds };
   };
-
+  
   useEffect(() => {
     // Get pending user from localStorage
     const storedPendingUser = localStorage.getItem('pendingUser');
-
+    
     if (!storedPendingUser) {
       // If no pending user, redirect to sign in
       navigate('/sign-in');
       return;
     }
-
+    
     const user = JSON.parse(storedPendingUser);
     setPendingUser(user);
-
+    
     // Calculate estimated verification date
     const estimatedDate = calculateEstimatedVerificationDate(user.createdAt);
-
+    
     // Update countdown timer every second
     const timer = setInterval(() => {
       setTimeRemaining(calculateTimeRemaining(estimatedDate));
     }, 1000);
-
+    
     // Clean up timer
     return () => clearInterval(timer);
   }, [navigate]);
-
+  
   // Format date to display
   const formatDate = (dateString) => {
-    const options = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
+    const options = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
-
+  
   if (!pendingUser) {
     return null; // Will redirect in useEffect
   }
-
+  
   // Calculate estimated verification date
   const estimatedDate = calculateEstimatedVerificationDate(pendingUser.createdAt);
-
+  
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full mx-auto">
@@ -109,7 +109,7 @@ const VerificationPending = () => {
             Your doctor account is awaiting verification
           </p>
         </div>
-
+        
         <div className="bg-white shadow overflow-hidden rounded-lg">
           <div className="px-4 py-5 sm:px-6 bg-blue-50">
             <h3 className="text-lg leading-6 font-medium text-blue-900">
@@ -119,19 +119,19 @@ const VerificationPending = () => {
               Your account is being reviewed by our admin team
             </p>
           </div>
-
+          
           <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Name</dt>
                 <dd className="mt-1 text-sm text-gray-900">Dr. {pendingUser.name}</dd>
               </div>
-
+              
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Email</dt>
                 <dd className="mt-1 text-sm text-gray-900">{pendingUser.email}</dd>
               </div>
-
+              
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500 flex items-center">
                   <FaCalendarAlt className="mr-2 text-blue-500" />
@@ -141,7 +141,7 @@ const VerificationPending = () => {
                   {formatDate(estimatedDate)}
                 </dd>
               </div>
-
+              
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500 flex items-center">
                   <FaHourglassHalf className="mr-2 text-blue-500" />
@@ -170,18 +170,18 @@ const VerificationPending = () => {
               </div>
             </dl>
           </div>
-
+          
           <div className="border-t border-gray-200 px-4 py-5 sm:px-6 bg-gray-50">
             <div className="text-sm">
               <div className="flex items-center mb-4 text-gray-600">
                 <FaCheckCircle className="h-5 w-5 text-green-500 mr-2" />
                 <span>We'll notify you by email once your account is verified</span>
               </div>
-
+              
               <p className="text-gray-500 mb-4">
                 Verification typically takes up to 2 business days. If you have any questions or need assistance, please contact our support team.
               </p>
-
+              
               <div className="mt-6 flex justify-center">
                 <Link
                   to="/sign-in"

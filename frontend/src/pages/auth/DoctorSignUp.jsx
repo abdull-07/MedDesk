@@ -34,7 +34,7 @@ const DoctorSignUp = () => {
     try {
       // Since the backend API doesn't exist yet, simulate successful registration
       try {
-        const response = await fetch('https://meddesk-l85w.onrender.com/api/auth/doctor/register', {
+        const response = await fetch('http://localhost:5000/api/auth/doctor/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
