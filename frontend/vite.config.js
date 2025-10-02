@@ -18,7 +18,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://med-desk-backend.onrender.com',
+        target: 'https://meddesk-l85w.onrender.com',
         changeOrigin: true,
         secure: false
       }
