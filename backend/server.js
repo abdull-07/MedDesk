@@ -19,9 +19,7 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.FRONTEND_URL
-    : 'https://meddesk-nhqt.onrender.com',
+  origin: ['https://med-desk-one.vercel.app', 'http://localhost:5173'],
   credentials: true,
   optionsSuccessStatus: 200
 };
