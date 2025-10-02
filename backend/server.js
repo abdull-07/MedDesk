@@ -18,35 +18,92 @@ import ReminderService from './services/reminder.service.js';
 const app = express();
 
 // CORS configuration
+const whitelist = [
+  'https://med-desk-one.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://meddesk-backend.onrender.com',
+  'https://meddesk-l85w.onrender.com'
+];
+
 const corsOptions = {
-  origin: ['https://med-desk-one.vercel.app', 'http://localhost:5173'],
+  origin: function (origin, callback) {
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  preflightContinue: false,
+  maxAge: 86400
 };
 
-// Middleware
+// Enable CORS for all routes
 app.use(cors(corsOptions));
 
-// Parse JSON payloads
+// Handle OPTIONS preflight requests
+app.options('*', cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+// Global middleware
+app.use(express.urlencoded({ extended: true }));
+
+// Custom middleware for handling JSON parsing
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/payments/webhook') {
+  // Skip JSON parsing for webhook routes
+  if (req.originalUrl === '/api/payments/webhook' || req.originalUrl === '/payments/webhook') {
     next();
   } else {
     express.json()(req, res, next);
   }
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/appointments', appointmentRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/schedules', scheduleRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/doctors', doctorRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/patients', patientRoutes);
+// Add security headers middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  next();
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// API Routes - both with and without /api prefix for flexibility
+const apiPrefixes = ['', '/api'];
+
+apiPrefixes.forEach(prefix => {
+  app.use(`${prefix}/auth`, authRoutes);
+  app.use(`${prefix}/admin`, adminRoutes);
+  app.use(`${prefix}/doctors`, doctorRoutes);
+  app.use(`${prefix}/patients`, patientRoutes);
+  app.use(`${prefix}/appointments`, appointmentRoutes);
+  app.use(`${prefix}/bookings`, bookingRoutes);
+  app.use(`${prefix}/schedules`, scheduleRoutes);
+  app.use(`${prefix}/notifications`, notificationRoutes);
+  app.use(`${prefix}/reviews`, reviewRoutes);
+  app.use(`${prefix}/payments`, paymentRoutes);
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+      status: err.status || 500
+    }
+  });
+});
 
 // MongoDB Connection
 const connectDB = async () => {
