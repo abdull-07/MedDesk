@@ -24,6 +24,16 @@ const userSchema = new mongoose.Schema({
     enum: ['patient', 'doctor', 'admin'],
     default: 'patient'
   },
+  profilePicture: {
+    url: {
+      type: String,
+      default: null
+    },
+    public_id: {
+      type: String,
+      default: null
+    }
+  },
   // Doctor specific fields
   specialization: {
     type: String,
