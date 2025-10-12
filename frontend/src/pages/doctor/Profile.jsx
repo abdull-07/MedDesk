@@ -11,7 +11,7 @@ const Profile = () => {
         qualifications: '', // required, string
         clinicName: '', // required
         experience: 0, // required
-        consultationFee: 0,
+        consultationFee: 1500,
         licenseNumber: '', // required
         about: '',
         services: [],
@@ -506,7 +506,7 @@ const Profile = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-[#457B9D] mb-2">
-                                                Consultation Fee ($)
+                                                Consultation Fee (PKR)
                                             </label>
                                             <input
                                                 type="number"
@@ -514,6 +514,7 @@ const Profile = () => {
                                                 value={profile.consultationFee}
                                                 onChange={(e) => handleChange('consultationFee', parseInt(e.target.value) || 0)}
                                                 disabled={!isEditing}
+                                                placeholder="Enter amount in PKR (500-5000)"
                                                 className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#006D77] focus:border-[#006D77] focus:outline-none transition-all duration-300 hover:border-[#006D77] shadow-sm ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : 'bg-gray-50 hover:bg-white'}`}
                                             />
                                         </div>

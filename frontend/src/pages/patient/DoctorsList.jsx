@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { formatCurrency } from '../../utils/currency';
 
 const DoctorsList = () => {
   const navigate = useNavigate();
@@ -154,7 +155,7 @@ const DoctorsList = () => {
       <div className="p-4">
         <Link to={`/patient/doctors/${doctor.id}`}>
           <h3 className="text-lg font-semibold text-[#1D3557] mb-1 hover:text-[#006D77] transition-colors">
-             {doctor.name}
+            {doctor.name}
           </h3>
         </Link>
         <p className="text-[#457B9D] text-sm mb-2">{doctor.specialty}</p>
@@ -185,7 +186,7 @@ const DoctorsList = () => {
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-[#006D77]">
-            ${doctor.consultationFee}
+            {formatCurrency(doctor.consultationFee)}
           </span>
           <button
             onClick={() => handleBookAppointment(doctor.id)}

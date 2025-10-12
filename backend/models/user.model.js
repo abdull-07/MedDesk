@@ -78,8 +78,9 @@ const userSchema = new mongoose.Schema({
   },
   consultationFee: {
     type: Number,
-    min: 0,
-    default: 0
+    min: 500,
+    max: 5000,
+    default: 1500
   },
   languages: [{
     type: String,

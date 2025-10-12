@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../utils/api';
+import { formatCurrency } from '../../utils/currency';
 
 const DoctorProfile = () => {
   const { id } = useParams();
@@ -44,7 +45,7 @@ const DoctorProfile = () => {
             `${doctorData.clinicName}, ${doctorData.location.city}` :
             doctorData.clinicName || 'Location not specified',
           experience: doctorData.experience || 0,
-          consultationFee: doctorData.consultationFee || 100,
+          consultationFee: doctorData.consultationFee || 1500,
           qualifications: doctorData.qualifications,
           about: doctorData.about || 'No information available',
           languages: doctorData.languages || [],
@@ -473,7 +474,7 @@ const DoctorProfile = () => {
                   </button>
 
                   <p className="mt-4 text-sm text-[#457B9D] text-center">
-                    Consultation fee: ${doctor?.consultationFee}
+                    Consultation fee: {formatCurrency(doctor?.consultationFee)}
                   </p>
                 </form>
               )}

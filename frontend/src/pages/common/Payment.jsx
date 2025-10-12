@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { formatCurrency } from '../../utils/currency';
 
 const Payment = () => {
   const location = useLocation();
@@ -26,7 +27,7 @@ const Payment = () => {
         date: '2024-03-20',
         time: '10:00 AM',
         type: 'Consultation',
-        fee: 150,
+        fee: 2000,
       });
     }
   }, [location]);
@@ -135,7 +136,7 @@ const Payment = () => {
                 <p className="text-sm text-[#457B9D]">Including all taxes</p>
               </div>
               <p className="text-xl font-semibold text-[#1D3557]">
-                PKR {(appointment.fee * 280).toFixed(2)}
+                {formatCurrency(appointment.fee)}
               </p>
             </div>
 
@@ -193,7 +194,7 @@ const Payment = () => {
               </>
             ) : (
               <>
-                Pay PKR {(appointment.fee * 280).toFixed(2)}
+                Pay {formatCurrency(appointment.fee)}
                 <svg
                   className="ml-2 h-5 w-5"
                   fill="none"

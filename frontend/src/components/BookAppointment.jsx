@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { formatCurrency } from '../utils/currency';
 
 const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => {
   const navigate = useNavigate();
@@ -209,7 +210,7 @@ const BookAppointment = ({ doctorId, onSuccess, onCancel, isModal = false }) => 
             <div className="text-[#457B9D]">
               <p className="font-medium">{doctor.name}</p>
               <p className="text-sm">{doctor.specialty} • {doctor.clinicName}</p>
-              <p className="text-sm">Consultation Fee: ${doctor.consultationFee}</p>
+              <p className="text-sm">Consultation Fee: {formatCurrency(doctor.consultationFee)}</p>
             </div>
           )}
         </div>

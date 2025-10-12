@@ -14,7 +14,7 @@ const DoctorSignUp = () => {
     clinicName: '',
     experience: '',
     licenseNumber: '',
-    consultationFee: 0
+    consultationFee: 1500
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -285,7 +285,7 @@ const DoctorSignUp = () => {
             
             <div>
               <label htmlFor="consultationFee" className="block text-sm font-medium text-gray-700">
-                Consultation Fee
+                Consultation Fee (PKR)
               </label>
               <div className="mt-1">
                 <input
@@ -296,7 +296,7 @@ const DoctorSignUp = () => {
                   value={formData.consultationFee}
                   onChange={handleChange}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#1D3557] focus:border-[#1D3557] sm:text-sm"
-                  placeholder="0"
+                  placeholder="Enter amount in PKR (500-5000)"
                 />
               </div>
             </div>
