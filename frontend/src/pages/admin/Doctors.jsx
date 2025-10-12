@@ -18,10 +18,6 @@ const Doctors = () => {
       try {
         const response = await api.get('/admin/doctors');
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = response.data;
         const doctorsData = Array.isArray(data) ? data : [];
 
@@ -53,40 +49,28 @@ const Doctors = () => {
 
   const handleVerificationAction = async (doctorId, action) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
       const endpoint = action === 'approve'
-        ? `/api/admin/doctors/${doctorId}/verify`
-        : `/api/admin/doctors/${doctorId}/reject`;
+        ? `/admin/doctors/${doctorId}/verify`
+        : `/admin/doctors/${doctorId}/reject`;
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: action === 'reject' ? JSON.stringify({ reason: 'Application rejected by admin' }) : undefined,
-      });
+      const requestData = action === 'reject' 
+        ? { reason: 'Application rejected by admin' } 
+        : {};
 
-      if (response.ok) {
-        // Update the local state
-        setDoctors(currentDoctors =>
-          currentDoctors.map(doctor =>
-            doctor._id === doctorId
-              ? { ...doctor, isVerified: action === 'approve' }
-              : doctor
-          )
-        );
-        setIsModalOpen(false);
+      await api.post(endpoint, requestData);
 
-        // Show success message
-        alert(`Doctor ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
-      } else {
-        throw new Error(`Failed to ${action} doctor`);
-      }
+      // Update the local state
+      setDoctors(currentDoctors =>
+        currentDoctors.map(doctor =>
+          doctor._id === doctorId
+            ? { ...doctor, isVerified: action === 'approve' }
+            : doctor
+        )
+      );
+      setIsModalOpen(false);
+
+      // Show success message
+      alert(`Doctor ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
     } catch (error) {
       console.error('Error updating doctor status:', error);
       alert(`Failed to ${action} doctor: ${error.message}`);
