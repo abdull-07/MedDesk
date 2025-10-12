@@ -13,8 +13,8 @@ const Settings = () => {
     appointmentReminders: true,
     maxAppointmentsPerDay: 10,
     consultationFeeRange: {
-      min: 50,
-      max: 500
+      min: 500,
+      max: 5000
     },
     workingHours: {
       start: '09:00',
@@ -298,18 +298,18 @@ const Settings = () => {
           <SettingCard title="Business Settings">
             <div className="grid grid-cols-2 gap-4 mb-4">
               <InputField
-                label="Min Consultation Fee"
+                label="Min Consultation Fee (PKR)"
                 type="number"
                 value={settings.consultationFeeRange.min}
                 onChange={(value) => handleInputChange('consultationFeeRange', 'min', parseInt(value))}
-                placeholder="Min fee"
+                placeholder="Min fee in PKR"
               />
               <InputField
-                label="Max Consultation Fee"
+                label="Max Consultation Fee (PKR)"
                 type="number"
                 value={settings.consultationFeeRange.max}
                 onChange={(value) => handleInputChange('consultationFeeRange', 'max', parseInt(value))}
-                placeholder="Max fee"
+                placeholder="Max fee in PKR"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">

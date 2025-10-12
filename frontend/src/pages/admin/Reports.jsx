@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
+import { formatCurrency } from '../../utils/currency';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -239,7 +240,7 @@ const Reports = () => {
           />
           <StatCard
             title="Total Revenue"
-            value={`$${reportData.revenue.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}`}
+            value={formatCurrency(reportData.revenue.reduce((sum, item) => sum + item.amount, 0))}
             change={8.1}
             icon={
               <svg className="w-6 h-6 text-[#006D77]" fill="none" viewBox="0 0 24 24" stroke="currentColor">

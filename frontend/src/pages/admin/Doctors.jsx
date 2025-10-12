@@ -145,7 +145,7 @@ const Doctors = () => {
                 <div>
                   <p className="text-sm font-medium text-[#1D3557]">Consultation Fee</p>
                   <p className="text-sm text-[#457B9D]">
-                    {doctor.consultationFee ? `$${doctor.consultationFee}` : 'Not set'}
+                    {doctor.consultationFee ? `PKR ${doctor.consultationFee}` : 'Not set'}
                   </p>
                 </div>
               </div>

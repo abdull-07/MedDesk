@@ -7,7 +7,7 @@ const doctorSchema = new mongoose.Schema({
   experience: { type: Number, required: true, min: 0 },
   licenseNumber: { type: String, required: true, unique: true, trim: true },
   clinicName: { type: String, required: true, trim: true },
-  consultationFee: { type: Number, min: 0, default: 0 },
+  consultationFee: { type: Number, min: 500, max: 5000, default: 1500 },
   services: [{ type: String, trim: true }],
   education: [{ degree: { type: String, trim: true }, institution: { type: String, trim: true }, year: { type: Number } }],
   certifications: [{ 
