@@ -45,17 +45,14 @@ const Appointments = () => {
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
       await api.put(`/admin/appointments/${appointmentId}/status`, { status: newStatus });
-        setAppointments(currentAppointments =>
-          currentAppointments.map(appointment =>
-            appointment._id === appointmentId
-              ? { ...appointment, status: newStatus }
-              : appointment
-          )
-        );
-        alert('Appointment status updated successfully');
-      } else {
-        throw new Error('Failed to update appointment status');
-      }
+      setAppointments(currentAppointments =>
+        currentAppointments.map(appointment =>
+          appointment._id === appointmentId
+            ? { ...appointment, status: newStatus }
+            : appointment
+        )
+      );
+      alert('Appointment status updated successfully');
     } catch (error) {
       console.error('Error updating appointment status:', error);
       alert(`Failed to update appointment status: ${error.message}`);
@@ -285,11 +282,10 @@ const Appointments = () => {
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                  currentPage === 1
+                className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${currentPage === 1
                     ? 'text-gray-300'
                     : 'text-[#006D77] hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 Previous
               </button>
@@ -297,11 +293,10 @@ const Appointments = () => {
                 <button
                   key={index + 1}
                   onClick={() => setCurrentPage(index + 1)}
-                  className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
-                    currentPage === index + 1
+                  className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${currentPage === index + 1
                       ? 'z-10 bg-[#E5F6F8] border-[#006D77] text-[#006D77]'
                       : 'bg-white text-[#457B9D] hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {index + 1}
                 </button>
@@ -309,11 +304,10 @@ const Appointments = () => {
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                  currentPage === totalPages
+                className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${currentPage === totalPages
                     ? 'text-gray-300'
                     : 'text-[#006D77] hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 Next
               </button>
