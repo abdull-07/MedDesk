@@ -81,6 +81,12 @@ app.get('/', (req, res) => {
   });
 });
 
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
 // Test route
 app.get('/health', (req, res) => {
   res.json({
@@ -102,6 +108,23 @@ app.use('/api/doctors', doctorRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/patients', patientRoutes);
+
+// Catch-all route for debugging
+app.use('*', (req, res) => {
+  console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    error: 'Route not found',
+    method: req.method,
+    url: req.originalUrl,
+    availableRoutes: [
+      'GET /',
+      'GET /health',
+      'GET /api/doctors/search',
+      'GET /api/doctors/specializations',
+      'POST /api/auth/login'
+    ]
+  });
+});
 
 // MongoDB Connection
 const connectDB = async () => {

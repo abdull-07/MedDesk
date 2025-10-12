@@ -9,15 +9,23 @@ const getBaseURL = () => {
 
   // If in production (deployed), use the production backend URL
   if (import.meta.env.PROD) {
-    return 'https://meddesk-backend.onrender.com/api';
+    return 'https://meddesk-l85w.onrender.com/api';
   }
 
   // Default to localhost for development
   return 'http://localhost:5000/api';
 };
 
+const baseURL = getBaseURL();
+console.log('API Base URL:', baseURL);
+console.log('Environment variables:', {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  PROD: import.meta.env.PROD,
+  MODE: import.meta.env.MODE
+});
+
 const api = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: baseURL,
   headers: {
     'Content-Type': 'application/json',
   }
