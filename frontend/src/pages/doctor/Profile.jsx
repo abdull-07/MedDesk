@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import ProfilePictureUpload from '../../components/ProfilePictureUpload';
 
 const Profile = () => {
     const { getUserProfile, updateUserProfile } = useAuth();
@@ -7,6 +8,7 @@ const Profile = () => {
     const [profile, setProfile] = useState({
         name: '',
         email: '',
+        profilePicture: null,
         specialization: '', // required
         qualifications: '', // required, string
         clinicName: '', // required
@@ -306,15 +308,13 @@ const Profile = () => {
 
                 <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 backdrop-blur-sm bg-opacity-90">
                     <div className="flex flex-col sm:flex-row items-center gap-8 mb-8">
-                        <div className="relative group">
-                            <div className="w-40 h-40 rounded-2xl overflow-hidden shadow-xl">
-                                <img src={profile.avatar || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMwMDZENzciLz48cGF0aCBkPSJNNjQgODBDNzcuMjU0OCA4MCA4OCA2OS4yNTQ4IDg4IDU2Qzg4IDQyLjc0NTIgNzcuMjU0OCAzMiA2NCAzMkM1MC43NDUyIDMyIDQwIDQyLjc0NTIgNDAgNTZDNDAgNjkuMjU0OCA1MC43NDUyIDgwIDY0IDgwWiIgZmlsbD0id2hpdGUiLz48cGF0aCBkPSJNMTAzLjk5NiAxMTJDMTAzLjk5NiA5My4yMzEgODYuMzIxNiA3OCA2NC40OTc5IDc4QzQyLjY3NDIgNzggMjUgOTMuMjMxIDI1IDExMkgxMDMuOTk2WiIgZmlsbD0id2hpdGUiLz48L3N2Zz4='} alt={profile.name} className="w-40 h-40 object-cover transition-transform duration-300 group-hover:scale-110" />
-                            </div>
-                            <label className="absolute bottom-2 right-2 bg-gradient-to-r from-[#006D77] to-[#1D3557] text-white p-3 rounded-xl cursor-pointer hover:from-[#005c66] hover:to-[#162942] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"> <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /> </svg>
-                            </label>
-                        </div>
+                        <ProfilePictureUpload
+                            currentImage={profile.profilePicture?.url || profile.profilePicture}
+                            onImageUpdate={(imageUrl) => setProfile(prev => ({
+                                ...prev,
+                                profilePicture: imageUrl ? { url: imageUrl } : null
+                            }))}
+                        />
                         <div className="text-center sm:text-left">
                             <h2 className="text-3xl font-bold text-[#1D3557] mb-2">{profile.name || 'Doctor Name'}</h2>
                             <p className="text-lg text-[#457B9D] mb-2">{profile.specialization || 'Specialization'}</p>
