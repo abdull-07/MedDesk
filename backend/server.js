@@ -65,6 +65,22 @@ app.use((req, res, next) => {
   }
 });
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'MedDesk Backend API',
+    status: 'Running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth/*',
+      doctors: '/api/doctors/*',
+      appointments: '/api/appointments/*'
+    }
+  });
+});
+
 // Test route
 app.get('/health', (req, res) => {
   res.json({
