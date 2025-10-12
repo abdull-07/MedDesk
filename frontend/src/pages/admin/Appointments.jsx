@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../../utils/api';
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -13,11 +14,6 @@ const Appointments = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Authentication token not found');
-        }
-
         const queryParams = new URLSearchParams({
           page: currentPage,
           status: selectedStatus,
@@ -25,18 +21,13 @@ const Appointments = () => {
           search: searchQuery
         });
 
-        const response = await fetch(`/api/admin/appointments?${queryParams}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await api.get(`/admin/appointments?${queryParams}`);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const data = response.data;
         setAppointments(Array.isArray(data.appointments) ? data.appointments : []);
         setTotalPages(data.totalPages || 1);
       } catch (error) {
@@ -53,21 +44,7 @@ const Appointments = () => {
 
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const response = await fetch(`/api/admin/appointments/${appointmentId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
+      await api.put(`/admin/appointments/${appointmentId}/status`, { status: newStatus });
         setAppointments(currentAppointments =>
           currentAppointments.map(appointment =>
             appointment._id === appointmentId

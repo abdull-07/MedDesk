@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../../utils/api';
 
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
@@ -15,23 +16,13 @@ const Doctors = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Authentication token not found');
-        }
-
-        const response = await fetch('/api/admin/doctors', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await api.get('/admin/doctors');
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const data = response.data;
         const doctorsData = Array.isArray(data) ? data : [];
 
         // Store all doctors

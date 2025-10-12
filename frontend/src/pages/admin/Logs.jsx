@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../../utils/api';
 
 const Logs = () => {
   const [logs, setLogs] = useState([]);
@@ -13,11 +14,6 @@ const Logs = () => {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Authentication token not found');
-        }
-
         const queryParams = new URLSearchParams({
           page: currentPage,
           type: selectedType,
@@ -25,18 +21,13 @@ const Logs = () => {
           search: searchQuery
         });
 
-        const response = await fetch(`/api/admin/logs?${queryParams}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await api.get(`/admin/logs?${queryParams}`);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const data = response.data;
         setLogs(Array.isArray(data.logs) ? data.logs : []);
         setTotalPages(data.totalPages || 1);
       } catch (error) {

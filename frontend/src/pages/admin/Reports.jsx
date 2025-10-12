@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,43 +40,29 @@ const Reports = () => {
   useEffect(() => {
     const fetchReportData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Authentication token not found');
-        }
-
-        const headers = {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        };
-
         const [
           appointmentsResponse,
           revenueResponse,
           specialtiesResponse,
           userGrowthResponse,
         ] = await Promise.all([
-          fetch(`/api/admin/reports/appointments?range=${timeRange}`, { headers }),
-          fetch(`/api/admin/reports/revenue?range=${timeRange}`, { headers }),
-          fetch('/api/admin/reports/specialties', { headers }),
-          fetch(`/api/admin/reports/user-growth?range=${timeRange}`, { headers }),
+          api.get(`/admin/reports/appointments?range=${timeRange}`),
+          api.get(`/admin/reports/revenue?range=${timeRange}`),
+          api.get('/admin/reports/specialties'),
+          api.get(`/admin/reports/user-growth?range=${timeRange}`),
         ]);
-
-        if (!appointmentsResponse.ok || !revenueResponse.ok || !specialtiesResponse.ok || !userGrowthResponse.ok) {
-          throw new Error('Failed to fetch report data');
-        }
 
         const [
           appointmentsData,
           revenueData,
           specialtiesData,
           userGrowthData,
-        ] = await Promise.all([
-          appointmentsResponse.json(),
-          revenueResponse.json(),
-          specialtiesResponse.json(),
-          userGrowthResponse.json(),
-        ]);
+        ] = [
+          appointmentsResponse.data,
+          revenueResponse.data,
+          specialtiesResponse.data,
+          userGrowthResponse.data,
+        ];
 
         setReportData({
           appointments: Array.isArray(appointmentsData) ? appointmentsData : [],

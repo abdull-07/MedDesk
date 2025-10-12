@@ -29,12 +29,10 @@ if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
-console.log('Environment:', process.env.NODE_ENV);
-console.log('Allowed origins:', allowedOrigins);
 
 const corsOptions = {
   origin: (origin, callback) => {
-    console.log('CORS request from origin:', origin);
+
 
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
