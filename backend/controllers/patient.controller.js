@@ -94,7 +94,7 @@ export const getPatientsByDoctor = async (req, res) => {
 
     // Get all unique patients who have had appointments with this doctor
     const appointments = await Appointment.find({ doctor: doctorId })
-      .populate('patient', 'name email')
+      .populate('patient', 'name email profilePicture')
       .lean();
 
     // Extract unique patient IDs

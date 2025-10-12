@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import { FaUserCircle, FaIdCard, FaPhone, FaCalendarAlt, FaVenusMars, FaTint, FaMapMarkerAlt, FaUserFriends, FaNotesMedical, FaAllergies, FaPills } from 'react-icons/fa';
+import ProfilePictureUpload from '../../components/ProfilePictureUpload';
 
 // Move components outside to prevent recreation on every render
 const InfoItem = ({ icon, label, value, isEditing, name, type = 'text', options = [], onChange }) => (
@@ -77,6 +78,7 @@ const PatientProfile = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    profilePicture: null,
     phone: '',
     dateOfBirth: '',
     gender: '',
@@ -265,8 +267,15 @@ const PatientProfile = () => {
           {/* Profile Header */}
           <div className="bg-gradient-to-r from-[#006D77] to-[#83C5BE] px-6 py-8 text-white">
             <div className="flex flex-col md:flex-row items-center">
-              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 md:mb-0 md:mr-6">
-                <FaUserCircle className="w-20 h-20 text-[#006D77]" />
+              <div className="mb-4 md:mb-0 md:mr-6">
+                <ProfilePictureUpload
+                  currentImage={formData.profilePicture?.url || formData.profilePicture}
+                  onImageUpdate={(imageUrl) => setFormData(prev => ({ 
+                    ...prev, 
+                    profilePicture: imageUrl ? { url: imageUrl } : null 
+                  }))}
+                  className="scale-75"
+                />
               </div>
               <div>
                 <h1 className="text-3xl font-bold">{formData.name}</h1>

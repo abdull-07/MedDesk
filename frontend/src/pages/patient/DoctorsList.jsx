@@ -65,7 +65,7 @@ const DoctorsList = () => {
           about: doctor.about,
           languages: doctor.languages || [],
           services: doctor.services || [],
-          image: `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
+          image: doctor.profilePicture?.url || `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
         }));
 
         setDoctors(formattedDoctors);
@@ -130,7 +130,7 @@ const DoctorsList = () => {
         about: doctor.about,
         languages: doctor.languages || [],
         services: doctor.services || [],
-        image: `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
+        image: doctor.profilePicture?.url || `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
       }));
 
       setDoctors(formattedDoctors);

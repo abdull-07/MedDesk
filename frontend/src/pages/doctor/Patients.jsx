@@ -54,11 +54,19 @@ const Patients = () => {
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex items-start justify-between">
         <div className="flex items-center">
-          <img
-            src={patient.avatar}
-            alt={patient.name}
-            className="w-16 h-16 rounded-full object-cover"
-          />
+          {patient.profilePicture?.url ? (
+            <img
+              src={patient.profilePicture.url}
+              alt={patient.name}
+              className="w-16 h-16 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-[#006D77] flex items-center justify-center">
+              <span className="text-white font-semibold text-lg">
+                {patient.name?.charAt(0)?.toUpperCase() || 'P'}
+              </span>
+            </div>
+          )}
           <div className="ml-4">
             <h3 className="text-lg font-medium text-[#1D3557]">
               {patient.name}

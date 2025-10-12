@@ -13,6 +13,7 @@ import doctorRoutes from './routes/doctor.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import patientRoutes from './routes/patient.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 import ReminderService from './services/reminder.service.js';
 
 const app = express();
@@ -106,6 +107,7 @@ app.use('/api/doctors', doctorRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Catch-all route for debugging
 app.use('*', (req, res) => {

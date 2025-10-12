@@ -178,7 +178,7 @@ export const getDoctorTodayAppointments = async (req, res) => {
       startTime: { $gte: startOfDay, $lt: endOfDay },
       status: { $in: ['scheduled', 'pending'] }
     })
-    .populate('patient', 'name email')
+    .populate('patient', 'name email profilePicture')
     .sort({ startTime: 1 })
     .limit(10);
 
