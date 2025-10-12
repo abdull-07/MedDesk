@@ -50,7 +50,7 @@ const DoctorProfile = () => {
           about: doctorData.about || 'No information available',
           languages: doctorData.languages || [],
           services: doctorData.services || [],
-          image: `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
+          image: doctorData.profilePicture?.url || `https://images.unsplash.com/photo-${1590000000000 + Math.floor(Math.random() * 1000)}?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`
         };
 
         setDoctor(formattedDoctor);

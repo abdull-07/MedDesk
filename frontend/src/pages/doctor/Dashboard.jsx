@@ -73,11 +73,19 @@ const Dashboard = () => {
   const AppointmentCard = ({ appointment }) => (
     <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
       <div className="flex items-center">
-        <img
-          src={appointment.patient.avatar}
-          alt={appointment.patient.name}
-          className="w-12 h-12 rounded-full object-cover"
-        />
+        {appointment.patient.profilePicture?.url ? (
+          <img
+            src={appointment.patient.profilePicture.url}
+            alt={appointment.patient.name}
+            className="w-12 h-12 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-[#006D77] flex items-center justify-center">
+            <span className="text-white font-semibold text-sm">
+              {appointment.patient.name?.charAt(0)?.toUpperCase() || 'P'}
+            </span>
+          </div>
+        )}
         <div className="ml-4">
           <h3 className="text-lg font-medium text-[#1D3557]">
             {appointment.patient.name}

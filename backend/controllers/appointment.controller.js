@@ -283,8 +283,8 @@ export const getAppointments = async (req, res) => {
     }
 
     const appointments = await Appointment.find(query)
-      .populate('patient', 'name email')
-      .populate('doctor', 'name email specialization clinicName')
+      .populate('patient', 'name email profilePicture')
+      .populate('doctor', 'name email specialization clinicName profilePicture')
       .sort({ startTime: 1 });
 
     res.json(appointments);
@@ -301,8 +301,8 @@ export const getAppointments = async (req, res) => {
 export const getAppointmentById = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
-      .populate('patient', 'name email')
-      .populate('doctor', 'name email specialization clinicName');
+      .populate('patient', 'name email profilePicture')
+      .populate('doctor', 'name email specialization clinicName profilePicture');
 
     if (!appointment) {
       return res.status(404).json({
