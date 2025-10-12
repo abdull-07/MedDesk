@@ -23,10 +23,6 @@ const Logs = () => {
 
         const response = await api.get(`/admin/logs?${queryParams}`);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = response.data;
         setLogs(Array.isArray(data.logs) ? data.logs : []);
         setTotalPages(data.totalPages || 1);

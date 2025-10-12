@@ -23,10 +23,6 @@ const Appointments = () => {
 
         const response = await api.get(`/admin/appointments?${queryParams}`);
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = response.data;
         setAppointments(Array.isArray(data.appointments) ? data.appointments : []);
         setTotalPages(data.totalPages || 1);
@@ -283,8 +279,8 @@ const Appointments = () => {
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${currentPage === 1
-                    ? 'text-gray-300'
-                    : 'text-[#006D77] hover:bg-gray-50'
+                  ? 'text-gray-300'
+                  : 'text-[#006D77] hover:bg-gray-50'
                   }`}
               >
                 Previous
@@ -294,8 +290,8 @@ const Appointments = () => {
                   key={index + 1}
                   onClick={() => setCurrentPage(index + 1)}
                   className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${currentPage === index + 1
-                      ? 'z-10 bg-[#E5F6F8] border-[#006D77] text-[#006D77]'
-                      : 'bg-white text-[#457B9D] hover:bg-gray-50'
+                    ? 'z-10 bg-[#E5F6F8] border-[#006D77] text-[#006D77]'
+                    : 'bg-white text-[#457B9D] hover:bg-gray-50'
                     }`}
                 >
                   {index + 1}
@@ -305,8 +301,8 @@ const Appointments = () => {
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
                 className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${currentPage === totalPages
-                    ? 'text-gray-300'
-                    : 'text-[#006D77] hover:bg-gray-50'
+                  ? 'text-gray-300'
+                  : 'text-[#006D77] hover:bg-gray-50'
                   }`}
               >
                 Next
