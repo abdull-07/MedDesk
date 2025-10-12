@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../../utils/api';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -17,27 +18,13 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Authentication token not found');
-        }
-
-        const headers = {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        };
-
         const [statsResponse, activitiesResponse] = await Promise.all([
-          fetch('/api/admin/stats', { headers }),
-          fetch('/api/admin/recent-activities', { headers })
+          api.get('/admin/stats'),
+          api.get('/admin/recent-activities')
         ]);
 
-        if (!statsResponse.ok || !activitiesResponse.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-
-        const statsData = await statsResponse.json();
-        const activitiesData = await activitiesResponse.json();
+        const statsData = statsResponse.data;
+        const activitiesData = activitiesResponse.data;
 
         // Validate and set the stats data
         setStats({

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../../utils/api';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -11,28 +12,13 @@ const Users = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Authentication token not found');
-        }
-
         const queryParams = new URLSearchParams({
           role: selectedRole,
           search: searchQuery
         });
 
-        const response = await fetch(`/api/admin/users?${queryParams}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const response = await api.get(`/admin/users?${queryParams}`);
+        const data = response.data;
         setUsers(Array.isArray(data.users) ? data.users : []);
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -48,30 +34,13 @@ const Users = () => {
 
   const handleStatusChange = async (userId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const response = await fetch(`/api/admin/users/${userId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        setUsers(currentUsers =>
-          currentUsers.map(user =>
-            user._id === userId ? { ...user, status: newStatus } : user
-          )
-        );
-        alert('User status updated successfully');
-      } else {
-        throw new Error('Failed to update user status');
-      }
+      await api.put(`/admin/users/${userId}/status`, { status: newStatus });
+      setUsers(currentUsers =>
+        currentUsers.map(user =>
+          user._id === userId ? { ...user, status: newStatus } : user
+        )
+      );
+      alert('User status updated successfully');
     } catch (error) {
       console.error('Error updating user status:', error);
       alert(`Failed to update user status: ${error.message}`);
@@ -80,30 +49,13 @@ const Users = () => {
 
   const handleRoleChange = async (userId, newRole) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const response = await fetch(`/api/admin/users/${userId}/role`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ role: newRole }),
-      });
-
-      if (response.ok) {
-        setUsers(currentUsers =>
-          currentUsers.map(user =>
-            user._id === userId ? { ...user, role: newRole } : user
-          )
-        );
-        alert('User role updated successfully');
-      } else {
-        throw new Error('Failed to update user role');
-      }
+      await api.put(`/admin/users/${userId}/role`, { role: newRole });
+      setUsers(currentUsers =>
+        currentUsers.map(user =>
+          user._id === userId ? { ...user, role: newRole } : user
+        )
+      );
+      alert('User role updated successfully');
     } catch (error) {
       console.error('Error updating user role:', error);
       alert(`Failed to update user role: ${error.message}`);
@@ -119,7 +71,7 @@ const Users = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
+    const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
@@ -158,7 +110,7 @@ const Users = () => {
           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
             ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
               user.role === 'doctor' ? 'bg-blue-100 text-blue-800' :
-              'bg-green-100 text-green-800'}`}
+                'bg-green-100 text-green-800'}`}
           >
             {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
           </span>
