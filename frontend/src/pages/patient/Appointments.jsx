@@ -19,20 +19,29 @@ const Appointments = () => {
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const response = await api.get('/appointments');
-        setAppointments(response.data);
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
-        setError('Failed to load appointments');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchAppointments = async () => {
+    try {
+      const response = await api.get('/appointments');
+      setAppointments(response.data);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      setError('Failed to load appointments');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAppointments();
+  }, []);
+
+  // Auto-refresh appointments every 5 minutes to catch expired appointments
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchAppointments();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
   }, []);
 
   // Fetch available slots when date changes in reschedule modal

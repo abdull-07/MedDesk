@@ -47,6 +47,7 @@
   import AdminReports from './pages/admin/Reports';
   import AdminLogs from './pages/admin/Logs';
   import AdminSettings from './pages/admin/Settings';
+  import ExpiryManagement from './pages/admin/ExpiryManagement';
 
   function App() {
     return (
@@ -128,6 +129,7 @@
                   <Route path="/admin/reports" element={<AdminReports />} />
                   <Route path="/admin/logs" element={<AdminLogs />} />
                   <Route path="/admin/settings" element={<AdminSettings />} />
+                  <Route path="/admin/expiry" element={<ExpiryManagement />} />
                 </Route>
 
                 {/* Catch-all route */}
