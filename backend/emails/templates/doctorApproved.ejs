@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Application Approved</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #28a745;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .success-banner {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .approval-details {
+            background-color: #d4edda;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #c3e6cb;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #155724;
+        }
+        .detail-value {
+            color: #155724;
+        }
+        .next-steps {
+            background-color: #e8f4fd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2c5aa0;
+            margin: 20px 0;
+        }
+        .step-item {
+            margin: 10px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .step-item:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+        .actions {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 10px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+        }
+        .button-primary {
+            background-color: #28a745;
+            color: white;
+        }
+        .button-secondary {
+            background-color: #2c5aa0;
+            color: white;
+        }
+        .credentials-info {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">HealthCare Platform</div>
+        </div>
+        
+        <h1 class="title">🎉 Congratulations!</h1>
+        
+        <div class="success-banner">
+            <div class="success-icon">✅</div>
+            <h2 style="margin: 0; font-size: 24px;">Your Application Has Been Approved!</h2>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">Welcome to our healthcare platform, Dr. <%= doctorName %>!</p>
+        </div>
+        
+        <div class="content">
+            <p>Dear Dr. <%= doctorName %>,</p>
+            
+            <p>We are delighted to inform you that your doctor registration application has been <strong>successfully approved</strong>! After careful review of your credentials and qualifications, our medical verification team has confirmed your eligibility to practice on our platform.</p>
+            
+            <div class="approval-details">
+                <h3 style="margin-top: 0; color: #155724;">Approval Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Application ID:</span>
+                    <span class="detail-value"><%= applicationId %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Approval Date:</span>
+                    <span class="detail-value"><%= approvalDate %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Doctor ID:</span>
+                    <span class="detail-value"><%= doctorId %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Specialization:</span>
+                    <span class="detail-value"><%= specialization %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">License Number:</span>
+                    <span class="detail-value"><%= licenseNumber %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Account Status:</span>
+                    <span class="detail-value"><strong>Active</strong></span>
+                </div>
+            </div>
+            
+            <div class="next-steps">
+                <h3 style="margin-top: 0; color: #2c5aa0;">Next Steps - Getting Started</h3>
+                <div class="step-item">Complete your profile setup and add your professional photo</div>
+                <div class="step-item">Set your availability and consultation hours</div>
+                <div class="step-item">Configure your appointment preferences and fees</div>
+                <div class="step-item">Review platform policies and patient interaction guidelines</div>
+                <div class="step-item">Start accepting patient appointments</div>
+            </div>
+            
+            <div class="actions">
+                <% if (loginUrl) { %>
+                    <a href="<%= loginUrl %>" class="button button-primary">Access Your Dashboard</a>
+                <% } %>
+                <% if (setupGuideUrl) { %>
+                    <a href="<%= setupGuideUrl %>" class="button button-secondary">Setup Guide</a>
+                <% } %>
+            </div>
+            
+            <div class="credentials-info">
+                <strong>Your Login Credentials:</strong><br>
+                Email: <%= doctorEmail %><br>
+                <% if (temporaryPassword) { %>
+                    Temporary Password: <%= temporaryPassword %><br>
+                    <em>Please change your password after first login for security.</em>
+                <% } else { %>
+                    <em>Use your existing password to log in.</em>
+                <% } %>
+            </div>
+            
+            <div class="next-steps">
+                <h3 style="margin-top: 0; color: #2c5aa0;">Platform Benefits</h3>
+                <div class="step-item">Access to a large patient network</div>
+                <div class="step-item">Secure video consultation platform</div>
+                <div class="step-item">Integrated appointment scheduling system</div>
+                <div class="step-item">Digital prescription and medical records</div>
+                <div class="step-item">24/7 technical support</div>
+                <div class="step-item">Flexible working hours and location</div>
+            </div>
+            
+            <p>Our team is here to support you every step of the way. If you have any questions about using the platform or need assistance with setup, please don't hesitate to reach out to our support team.</p>
+            
+            <p>We're excited to have you join our community of healthcare professionals and look forward to the positive impact you'll make on our patients' lives.</p>
+            
+            <p>Welcome aboard!</p>
+            
+            <p>Best regards,<br>
+            The Healthcare Platform Team<br>
+            Medical Verification Department</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an official approval notification. Please save this email for your records.</p>
+            <p>Need assistance? Contact us at support@healthcareplatform.com or call (555) 123-4567</p>
+            <p>&copy; 2024 Healthcare Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

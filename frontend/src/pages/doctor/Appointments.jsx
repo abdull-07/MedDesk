@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import api from '../../utils/api';
 
@@ -7,46 +7,78 @@ const Appointments = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(null); // Track which appointment is being updated
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        setIsLoading(true);
-        setError('');
-        
-        let response;
-        
-        // Fetch appointments based on active tab using the correct endpoint
-        if (activeTab === 'upcoming') {
-          // For upcoming, we want only scheduled appointments
-          response = await api.get('/appointments?status=scheduled');
-        } else if (activeTab === 'pending') {
-          // For pending, we want appointments awaiting doctor approval
-          response = await api.get('/appointments?status=pending');
-        } else if (activeTab === 'completed') {
-          response = await api.get('/appointments?status=completed');
-        } else if (activeTab === 'cancelled') {
-          response = await api.get('/appointments?status=cancelled');
-        } else {
-          response = await api.get('/appointments');
-        }
-        setAppointments(response.data || []);
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
-        setError('Failed to load appointments');
-      } finally {
-        setIsLoading(false);
+  const fetchAppointments = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+
+      let response;
+
+      // Fetch appointments based on active tab using the correct endpoint
+      if (activeTab === 'upcoming') {
+        // For upcoming, we want only scheduled appointments
+        response = await api.get('/appointments?status=scheduled');
+      } else if (activeTab === 'pending') {
+        // For pending, we want appointments awaiting doctor approval
+        response = await api.get('/appointments?status=pending');
+      } else if (activeTab === 'completed') {
+        response = await api.get('/appointments?status=completed');
+      } else if (activeTab === 'cancelled') {
+        response = await api.get('/appointments?status=cancelled');
+      } else {
+        response = await api.get('/appointments');
       }
-    };
-
-    fetchAppointments();
+      setAppointments(response.data || []);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      setError('Failed to load appointments');
+    } finally {
+      setIsLoading(false);
+    }
   }, [activeTab]);
 
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  // Auto-refresh appointments every 5 minutes to catch expired appointments
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchAppointments();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [fetchAppointments]);
+
   const handleStatusChange = async (appointmentId, newStatus) => {
+    // Find the current appointment to check its status
+    const currentAppointment = appointments.find(apt => apt._id === appointmentId);
+
+    if (!currentAppointment) {
+      setError('Appointment not found');
+      return;
+    }
+
+    // Prevent changing to the same status
+    if (currentAppointment.status === newStatus) {
+      setError(`Appointment is already ${newStatus}`);
+      return;
+    }
+
+
+
+    // Prevent multiple simultaneous updates
+    if (updatingStatus === appointmentId) {
+      return;
+    }
+
+    setUpdatingStatus(appointmentId);
+
     try {
       await api.patch(`/appointments/${appointmentId}/status`, { status: newStatus });
-      
+
       setAppointments(currentAppointments =>
         currentAppointments.map(appointment =>
           appointment._id === appointmentId
@@ -54,9 +86,15 @@ const Appointments = () => {
             : appointment
         )
       );
+
+      // Clear any previous errors
+      setError('');
     } catch (error) {
       console.error('Error updating appointment status:', error);
-      setError('Failed to update appointment status');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update appointment status';
+      setError(errorMessage);
+    } finally {
+      setUpdatingStatus(null);
     }
   };
 
@@ -96,7 +134,7 @@ const Appointments = () => {
     };
 
     // Generate avatar if not provided
-    const patientAvatar = appointment.patient?.avatar || 
+    const patientAvatar = appointment.patient?.avatar ||
       `https://ui-avatars.com/api/?name=${encodeURIComponent(appointment.patient?.name || 'U')}&background=83C5BE&color=fff`;
 
     return (
@@ -118,9 +156,8 @@ const Appointments = () => {
             </div>
           </div>
           <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              statusColors[appointment.status] || 'bg-gray-100 text-gray-800'
-            }`}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[appointment.status] || 'bg-gray-100 text-gray-800'
+              }`}
           >
             {appointment.status ? appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1) : 'Unknown'}
           </span>
@@ -153,19 +190,33 @@ const Appointments = () => {
             <p className="text-[#1D3557]">{appointment.notes}</p>
           </div>
         )}
+        {appointment.status === 'cancelled' && appointment.cancellationReason && (
+          <div className="mb-4">
+            <p className="text-sm text-[#457B9D]">Cancellation Reason</p>
+            <p className="text-[#1D3557] font-medium">{appointment.cancellationReason}</p>
+          </div>
+        )}
         {appointment.status === 'pending' && (
           <div className="flex space-x-4">
             <button
               onClick={() => handleStatusChange(appointment._id, 'scheduled')}
-              className="flex-1 bg-[#006D77] text-white px-4 py-2 rounded-md hover:bg-[#005c66] transition-colors duration-300"
+              disabled={updatingStatus === appointment._id}
+              className={`flex-1 px-4 py-2 rounded-md transition-colors duration-300 ${updatingStatus === appointment._id
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-[#006D77] text-white hover:bg-[#005c66]'
+                }`}
             >
-              Approve
+              {updatingStatus === appointment._id ? 'Updating...' : 'Approve'}
             </button>
             <button
               onClick={() => handleStatusChange(appointment._id, 'cancelled')}
-              className="flex-1 border border-red-500 text-red-500 px-4 py-2 rounded-md hover:bg-red-50 transition-colors duration-300"
+              disabled={updatingStatus === appointment._id}
+              className={`flex-1 px-4 py-2 rounded-md transition-colors duration-300 ${updatingStatus === appointment._id
+                  ? 'border border-gray-300 text-gray-400 cursor-not-allowed'
+                  : 'border border-red-500 text-red-500 hover:bg-red-50'
+                }`}
             >
-              Reject
+              {updatingStatus === appointment._id ? 'Updating...' : 'Reject'}
             </button>
           </div>
         )}
@@ -173,21 +224,33 @@ const Appointments = () => {
           <div className="flex space-x-3">
             <button
               onClick={() => handleStatusChange(appointment._id, 'completed')}
-              className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-300"
+              disabled={updatingStatus === appointment._id}
+              className={`flex-1 px-4 py-2 rounded-md transition-colors duration-300 ${updatingStatus === appointment._id
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
             >
-              Mark Completed
+              {updatingStatus === appointment._id ? 'Updating...' : 'Mark Completed'}
             </button>
             <button
               onClick={() => handleStatusChange(appointment._id, 'no-show')}
-              className="flex-1 border border-gray-500 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors duration-300"
+              disabled={updatingStatus === appointment._id}
+              className={`flex-1 px-4 py-2 rounded-md transition-colors duration-300 ${updatingStatus === appointment._id
+                  ? 'border border-gray-300 text-gray-400 cursor-not-allowed'
+                  : 'border border-gray-500 text-gray-600 hover:bg-gray-50'
+                }`}
             >
-              No Show
+              {updatingStatus === appointment._id ? 'Updating...' : 'No Show'}
             </button>
             <button
               onClick={() => handleStatusChange(appointment._id, 'cancelled')}
-              className="flex-1 border border-red-500 text-red-500 px-4 py-2 rounded-md hover:bg-red-50 transition-colors duration-300"
+              disabled={updatingStatus === appointment._id}
+              className={`flex-1 px-4 py-2 rounded-md transition-colors duration-300 ${updatingStatus === appointment._id
+                  ? 'border border-gray-300 text-gray-400 cursor-not-allowed'
+                  : 'border border-red-500 text-red-500 hover:bg-red-50'
+                }`}
             >
-              Cancel
+              {updatingStatus === appointment._id ? 'Updating...' : 'Cancel'}
             </button>
           </div>
         )}
@@ -237,11 +300,10 @@ const Appointments = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
                       ? 'border-[#006D77] text-[#006D77]'
                       : 'border-transparent text-[#457B9D] hover:text-[#1D3557] hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>

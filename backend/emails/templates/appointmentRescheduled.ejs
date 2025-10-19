@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Rescheduled</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #17a2b8;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .appointment-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .old-appointment {
+            border-left: 4px solid #dc3545;
+            opacity: 0.7;
+        }
+        .new-appointment {
+            border-left: 4px solid #28a745;
+        }
+        .card-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .detail-value {
+            color: #212529;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-cancelled {
+            background-color: #dc3545;
+            color: white;
+        }
+        .status-confirmed {
+            background-color: #28a745;
+            color: white;
+        }
+        .actions {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 5px 10px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .button-primary {
+            background-color: #2c5aa0;
+            color: white;
+        }
+        .button-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .highlight-info {
+            background-color: #d1ecf1;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #17a2b8;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">HealthCare Platform</div>
+        </div>
+        
+        <h1 class="title">🔄 Appointment Rescheduled</h1>
+        
+        <div class="content">
+            <p>Dear <%= recipientName %>,</p>
+            
+            <% if (recipientType === 'patient') { %>
+                <p>Your appointment with Dr. <%= doctorName %> has been successfully rescheduled. Please note the new date and time below.</p>
+            <% } else { %>
+                <p>The appointment with patient <%= patientName %> has been rescheduled. Please update your calendar with the new details.</p>
+            <% } %>
+            
+            <div class="appointment-card old-appointment">
+                <div class="card-title">❌ Previous Appointment (Cancelled)</div>
+                <div class="appointment-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Date & Time:</span>
+                        <span class="detail-value"><%= oldAppointmentDate %> at <%= oldAppointmentTime %></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value"><span class="status-badge status-cancelled">Cancelled</span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="appointment-card new-appointment">
+                <div class="card-title">✅ New Appointment (Confirmed)</div>
+                <div class="appointment-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Appointment ID:</span>
+                        <span class="detail-value">#<%= appointmentId %></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">New Date & Time:</span>
+                        <span class="detail-value"><%= newAppointmentDate %> at <%= newAppointmentTime %></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Duration:</span>
+                        <span class="detail-value"><%= duration %> minutes</span>
+                    </div>
+                    <% if (recipientType === 'patient') { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Doctor:</span>
+                            <span class="detail-value">Dr. <%= doctorName %></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Specialization:</span>
+                            <span class="detail-value"><%= doctorSpecialization %></span>
+                        </div>
+                    <% } else { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Patient:</span>
+                            <span class="detail-value"><%= patientName %></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Patient Contact:</span>
+                            <span class="detail-value"><%= patientPhone %></span>
+                        </div>
+                    <% } %>
+                    <% if (appointmentType) { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Type:</span>
+                            <span class="detail-value"><%= appointmentType %></span>
+                        </div>
+                    <% } %>
+                    <% if (location) { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Location:</span>
+                            <span class="detail-value"><%= location %></span>
+                        </div>
+                    <% } %>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value"><span class="status-badge status-confirmed">Confirmed</span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <% if (rescheduledBy) { %>
+                <div class="highlight-info">
+                    <strong>Rescheduled by:</strong> <%= rescheduledBy %><br>
+                    <strong>Reschedule Date:</strong> <%= rescheduleDate %>
+                    <% if (rescheduleReason) { %>
+                        <br><strong>Reason:</strong> <%= rescheduleReason %>
+                    <% } %>
+                </div>
+            <% } %>
+            
+            <% if (recipientType === 'patient') { %>
+                <div class="highlight-info">
+                    <strong>Important Reminders:</strong><br>
+                    • Please arrive 15 minutes before your new scheduled time<br>
+                    • Bring a valid ID and insurance card<br>
+                    • Bring any relevant medical records or test results<br>
+                    • Add the new appointment to your calendar<br>
+                    • If you need to reschedule again, please do so at least 24 hours in advance
+                </div>
+            <% } else { %>
+                <div class="highlight-info">
+                    <strong>Action Items:</strong><br>
+                    • Update your calendar with the new appointment time<br>
+                    • Review patient history before the new appointment<br>
+                    • Prepare any necessary forms or documents<br>
+                    • Ensure all required equipment is available for the new time<br>
+                    • Contact patient if any pre-appointment instructions are needed
+                </div>
+            <% } %>
+            
+            <div class="actions">
+                <% if (dashboardUrl) { %>
+                    <a href="<%= dashboardUrl %>" class="button button-primary">View in Dashboard</a>
+                <% } %>
+                <% if (addToCalendarUrl) { %>
+                    <a href="<%= addToCalendarUrl %>" class="button button-secondary">Add to Calendar</a>
+                <% } %>
+            </div>
+            
+            <p>Thank you for your flexibility. We apologize for any inconvenience caused by this schedule change.</p>
+            
+            <p>If you have any questions or need to make further changes, please contact us immediately.</p>
+            
+            <p>Best regards,<br>
+            The Healthcare Platform Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated confirmation. Please save this email for your records.</p>
+            <p>Need help? Contact us at support@healthcareplatform.com or call (555) 123-4567</p>
+            <p>&copy; 2024 Healthcare Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

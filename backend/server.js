@@ -14,7 +14,9 @@ import reviewRoutes from './routes/review.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import patientRoutes from './routes/patient.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import expiryRoutes from './routes/expiry.routes.js';
 import ReminderService from './services/reminder.service.js';
+import ExpiryService from './services/expiry.service.js';
 
 const app = express();
 
@@ -47,9 +49,19 @@ const corsOptions = {
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Cache-Control',
+    'X-File-Name'
+  ],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 };
 
 // Middleware
@@ -108,6 +120,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/expiry', expiryRoutes);
 
 // Catch-all route for debugging
 app.use('*', (req, res) => {
@@ -155,7 +168,7 @@ const connectDB = async () => {
   }
 };
 
-// Schedule cron jobs for reminders
+// Schedule cron jobs for reminders and expiry checks
 const scheduleCronJobs = () => {
   // Daily reminders at 9 AM
   nodeCron.schedule('0 9 * * *', () => {
@@ -168,6 +181,22 @@ const scheduleCronJobs = () => {
     console.log('Running hourly appointment reminders...');
     ReminderService.sendHourlyReminders();
   });
+
+  // Check for expired appointments every 15 minutes
+  nodeCron.schedule('*/15 * * * *', () => {
+    console.log('Checking for expired appointments...');
+    ExpiryService.processExpiredAppointments().catch(error => {
+      console.error('Error processing expired appointments:', error);
+    });
+  });
+
+  // Run expiry check immediately on startup
+  setTimeout(() => {
+    console.log('Running initial expiry check...');
+    ExpiryService.processExpiredAppointments().catch(error => {
+      console.error('Error in initial expiry check:', error);
+    });
+  }, 5000); // Wait 5 seconds after startup
 };
 
 // Initialize server
