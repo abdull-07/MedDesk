@@ -98,7 +98,7 @@ const VerificationPending = () => {
   const estimatedDate = calculateEstimatedVerificationDate(pendingUser.createdAt);
   
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-30 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-8">
           <FaExclamationTriangle className="mx-auto h-12 w-12 text-yellow-500" />
@@ -124,7 +124,7 @@ const VerificationPending = () => {
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Name</dt>
-                <dd className="mt-1 text-sm text-gray-900">Dr. {pendingUser.name}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{pendingUser.name}</dd>
               </div>
               
               <div className="sm:col-span-1">
@@ -184,10 +184,10 @@ const VerificationPending = () => {
               
               <div className="mt-6 flex justify-center">
                 <Link
-                  to="/sign-in"
+                  to="/"
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Back to Sign In
+                  Back to Home
                 </Link>
               </div>
             </div>

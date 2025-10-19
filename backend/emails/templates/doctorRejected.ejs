@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Application Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #dc3545;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .status-banner {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .application-details {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #6c757d;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .detail-value {
+            color: #212529;
+        }
+        .rejection-reasons {
+            background-color: #fff5f5;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+            margin: 20px 0;
+        }
+        .reason-item {
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .reason-item:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .next-steps {
+            background-color: #e8f4fd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2c5aa0;
+            margin: 20px 0;
+        }
+        .step-item {
+            margin: 10px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .step-item:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #2c5aa0;
+            font-weight: bold;
+        }
+        .actions {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 5px 10px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .button-primary {
+            background-color: #2c5aa0;
+            color: white;
+        }
+        .button-secondary {
+            background-color: #28a745;
+            color: white;
+        }
+        .important-info {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">HealthCare Platform</div>
+        </div>
+        
+        <h1 class="title">Application Status Update</h1>
+        
+        <div class="content">
+            <p>Dear Dr. <%= doctorName %>,</p>
+            
+            <p>Thank you for your interest in joining our healthcare platform. We have completed the review of your doctor registration application.</p>
+            
+            <div class="status-banner">
+                <h3 style="margin: 0; font-size: 18px;">Application Status: Not Approved</h3>
+                <p style="margin: 10px 0 0 0;">We are unable to approve your application at this time.</p>
+            </div>
+            
+            <div class="application-details">
+                <h3 style="margin-top: 0; color: #495057;">Application Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Application ID:</span>
+                    <span class="detail-value"><%= applicationId %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Submitted Date:</span>
+                    <span class="detail-value"><%= submittedDate %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Review Date:</span>
+                    <span class="detail-value"><%= reviewDate %></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Reviewed By:</span>
+                    <span class="detail-value">Medical Verification Team</span>
+                </div>
+            </div>
+            
+            <% if (rejectionReasons && rejectionReasons.length > 0) { %>
+                <div class="rejection-reasons">
+                    <h3 style="margin-top: 0; color: #721c24;">Reasons for Non-Approval</h3>
+                    <p>Our review identified the following issues that need to be addressed:</p>
+                    <% rejectionReasons.forEach(function(reason) { %>
+                        <div class="reason-item"><%= reason %></div>
+                    <% }); %>
+                </div>
+            <% } %>
+            
+            <% if (canReapply) { %>
+                <div class="next-steps">
+                    <h3 style="margin-top: 0; color: #2c5aa0;">How to Reapply</h3>
+                    <p>You may submit a new application once you have addressed the issues mentioned above:</p>
+                    <div class="step-item">Gather the required documentation or corrections</div>
+                    <div class="step-item">Ensure all information is accurate and up-to-date</div>
+                    <div class="step-item">Submit a new application through our platform</div>
+                    <div class="step-item">Allow 2-3 business days for review</div>
+                </div>
+                
+                <div class="actions">
+                    <% if (reapplyUrl) { %>
+                        <a href="<%= reapplyUrl %>" class="button button-secondary">Submit New Application</a>
+                    <% } %>
+                    <% if (supportUrl) { %>
+                        <a href="<%= supportUrl %>" class="button button-primary">Contact Support</a>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <div class="important-info">
+                    <strong>Reapplication Policy:</strong><br>
+                    Based on our review, you may not be eligible to reapply at this time. If you believe this decision was made in error, please contact our support team for further clarification.
+                </div>
+            <% } %>
+            
+            <div class="important-info">
+                <strong>Required Documents for Future Applications:</strong><br>
+                • Valid medical license (current and in good standing)<br>
+                • Professional liability insurance certificate<br>
+                • Board certification (if applicable)<br>
+                • Government-issued photo identification<br>
+                • Proof of medical education and training<br>
+                • Professional references (if requested)
+            </div>
+            
+            <% if (additionalNotes) { %>
+                <div class="next-steps">
+                    <h3 style="margin-top: 0; color: #2c5aa0;">Additional Notes</h3>
+                    <p><%= additionalNotes %></p>
+                </div>
+            <% } %>
+            
+            <p>We understand this may be disappointing news. Our verification process is designed to ensure the highest standards of patient care and safety on our platform.</p>
+            
+            <p>If you have any questions about this decision or need clarification on the requirements, please don't hesitate to contact our support team. We're here to help guide you through the process.</p>
+            
+            <p>Thank you for your understanding and your commitment to healthcare.</p>
+            
+            <p>Best regards,<br>
+            The Healthcare Platform Team<br>
+            Medical Verification Department</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an official application status notification. Please save this email for your records.</p>
+            <p>Need assistance? Contact us at support@healthcareplatform.com or call (555) 123-4567</p>
+            <p>&copy; 2024 Healthcare Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

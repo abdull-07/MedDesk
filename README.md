@@ -41,14 +41,12 @@ MedDesk is a full-stack doctor appointment booking web application designed to c
 ### 🔐 Auth & Middleware
 
 ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=JSON%20web%20tokens&logoColor=white)
-![Clerk](https://img.shields.io/badge/Clerk-F02E65?style=for-the-badge&logo=clerk&logoColor=white)
 
 ---
 
 ### 💳 Payments
 
 ![Stripe](https://img.shields.io/badge/Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white)
-![JazzCash](https://img.shields.io/badge/JazzCash-AA1F2D?style=for-the-badge)
 
 
 
@@ -87,7 +85,7 @@ MONGO_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
 
 # Admin Credentials for first-time login
-ADMIN_EMAIL=admin@example.com
+ADMIN_EMAIL=testadmin@gmail.com
 ADMIN_PASSWORD=securepassword
 
 # SMTP (optional)

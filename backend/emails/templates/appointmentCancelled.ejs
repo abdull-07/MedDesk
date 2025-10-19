@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Cancelled</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #dc3545;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .appointment-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .detail-value {
+            color: #212529;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .actions {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 5px 10px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .button-primary {
+            background-color: #2c5aa0;
+            color: white;
+        }
+        .important-info {
+            background-color: #f8d7da;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #dc3545;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">HealthCare Platform</div>
+        </div>
+        
+        <h1 class="title">✗ Appointment Cancelled</h1>
+        
+        <div class="content">
+            <p>Dear <%= recipientName %>,</p>
+            
+            <% if (recipientType === 'patient') { %>
+                <p>We regret to inform you that your appointment with Dr. <%= doctorName %> has been cancelled.</p>
+            <% } else { %>
+                <p>This is to notify you that the appointment with patient <%= patientName %> has been cancelled.</p>
+            <% } %>
+            
+            <div class="appointment-card">
+                <div class="appointment-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Appointment ID:</span>
+                        <span class="detail-value">#<%= appointmentId %></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Original Date & Time:</span>
+                        <span class="detail-value"><%= appointmentDate %> at <%= appointmentTime %></span>
+                    </div>
+                    <% if (recipientType === 'patient') { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Doctor:</span>
+                            <span class="detail-value">Dr. <%= doctorName %></span>
+                        </div>
+                    <% } else { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Patient:</span>
+                            <span class="detail-value"><%= patientName %></span>
+                        </div>
+                    <% } %>
+                    <div class="detail-row">
+                        <span class="detail-label">Cancelled By:</span>
+                        <span class="detail-value"><%= cancelledBy %></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Cancellation Date:</span>
+                        <span class="detail-value"><%= cancellationDate %></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value"><span class="status-badge">Cancelled</span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <% if (cancellationReason) { %>
+                <div class="important-info">
+                    <strong>Reason for Cancellation:</strong><br>
+                    <%= cancellationReason %>
+                </div>
+            <% } %>
+            
+            <% if (recipientType === 'patient') { %>
+                <p>We apologize for any inconvenience this may cause. You can reschedule your appointment at your convenience using the link below.</p>
+                
+                <div class="actions">
+                    <% if (rescheduleUrl) { %>
+                        <a href="<%= rescheduleUrl %>" class="button button-primary">Schedule New Appointment</a>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <p>Please update your schedule accordingly. If you need to reach out to the patient, their contact information is available in your dashboard.</p>
+            <% } %>
+            
+            <p>If you have any questions or concerns, please don't hesitate to contact our support team.</p>
+            
+            <p>Best regards,<br>
+            The Healthcare Platform Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated notification. Please save this email for your records.</p>
+            <p>Need help? Contact us at support@healthcareplatform.com or call (555) 123-4567</p>
+            <p>&copy; 2024 Healthcare Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
