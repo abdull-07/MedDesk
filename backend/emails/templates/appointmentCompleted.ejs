@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Completed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #28a745;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .appointment-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .detail-value {
+            color: #212529;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .actions {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 5px 10px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .button-primary {
+            background-color: #2c5aa0;
+            color: white;
+        }
+        .button-secondary {
+            background-color: #28a745;
+            color: white;
+        }
+        .highlight-info {
+            background-color: #d1ecf1;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #17a2b8;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">HealthCare Platform</div>
+        </div>
+        
+        <h1 class="title">✓ Appointment Completed</h1>
+        
+        <div class="content">
+            <p>Dear <%= recipientName %>,</p>
+            
+            <% if (recipientType === 'patient') { %>
+                <p>Thank you for attending your appointment with Dr. <%= doctorName %>. Your appointment has been successfully completed.</p>
+            <% } else { %>
+                <p>The appointment with patient <%= patientName %> has been marked as completed.</p>
+            <% } %>
+            
+            <div class="appointment-card">
+                <div class="appointment-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Appointment ID:</span>
+                        <span class="detail-value">#<%= appointmentId %></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date & Time:</span>
+                        <span class="detail-value"><%= appointmentDate %> at <%= appointmentTime %></span>
+                    </div>
+                    <% if (recipientType === 'patient') { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Doctor:</span>
+                            <span class="detail-value">Dr. <%= doctorName %></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Specialization:</span>
+                            <span class="detail-value"><%= doctorSpecialization %></span>
+                        </div>
+                    <% } else { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Patient:</span>
+                            <span class="detail-value"><%= patientName %></span>
+                        </div>
+                    <% } %>
+                    <div class="detail-row">
+                        <span class="detail-label">Duration:</span>
+                        <span class="detail-value"><%= duration %> minutes</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value"><span class="status-badge">Completed</span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <% if (recipientType === 'patient') { %>
+                <div class="highlight-info">
+                    <strong>Next Steps:</strong><br>
+                    • Follow any prescribed treatment or medication instructions<br>
+                    • Schedule follow-up appointments if recommended<br>
+                    • Contact us if you have any questions about your treatment<br>
+                    • Keep this confirmation for your medical records
+                </div>
+                
+                <% if (prescriptions || followUpInstructions) { %>
+                    <div class="highlight-info">
+                        <% if (prescriptions) { %>
+                            <strong>Prescriptions:</strong><br>
+                            <%= prescriptions %><br><br>
+                        <% } %>
+                        <% if (followUpInstructions) { %>
+                            <strong>Follow-up Instructions:</strong><br>
+                            <%= followUpInstructions %>
+                        <% } %>
+                    </div>
+                <% } %>
+                
+                <div class="actions">
+                    <% if (feedbackUrl) { %>
+                        <a href="<%= feedbackUrl %>" class="button button-secondary">Leave Feedback</a>
+                    <% } %>
+                    <% if (bookNextUrl) { %>
+                        <a href="<%= bookNextUrl %>" class="button button-primary">Book Next Appointment</a>
+                    <% } %>
+                </div>
+                
+                <p>We hope you had a positive experience. Your health and well-being are our top priority.</p>
+            <% } else { %>
+                <div class="highlight-info">
+                    <strong>Post-Appointment Tasks:</strong><br>
+                    • Update patient records with consultation notes<br>
+                    • Send any prescriptions or follow-up instructions<br>
+                    • Schedule follow-up appointments if needed<br>
+                    • Complete any required documentation
+                </div>
+                
+                <p>Thank you for providing quality healthcare through our platform.</p>
+            <% } %>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+            
+            <p>Best regards,<br>
+            The Healthcare Platform Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated confirmation. Please save this email for your records.</p>
+            <p>Need help? Contact us at support@healthcareplatform.com or call (555) 123-4567</p>
+            <p>&copy; 2024 Healthcare Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

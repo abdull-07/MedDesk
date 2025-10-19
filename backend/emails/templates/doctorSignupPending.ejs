@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Signup Pending</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #2c5aa0;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .highlight {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #2c5aa0;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #2c5aa0;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">HealthCare Platform</div>
+        </div>
+        
+        <h1 class="title">Application Received Successfully</h1>
+        
+        <div class="content">
+            <p>Dear Dr. <%= doctorName %>,</p>
+            
+            <p>Thank you for your interest in joining our healthcare platform. We have successfully received your doctor registration application.</p>
+            
+            <div class="highlight">
+                <strong>Application Status:</strong> Pending Review<br>
+                <strong>Application ID:</strong> <%= applicationId %><br>
+                <strong>Submitted Date:</strong> <%= submittedDate %>
+            </div>
+            
+            <p>Your application is currently under review by our medical verification team. This process typically takes 2-3 business days as we carefully verify:</p>
+            
+            <ul>
+                <li>Medical license and credentials</li>
+                <li>Professional qualifications</li>
+                <li>Identity verification</li>
+                <li>Practice information</li>
+            </ul>
+            
+            <p>We will notify you via email once the review process is complete. You will receive either an approval confirmation or a request for additional information if needed.</p>
+            
+            <div class="highlight">
+                <strong>What happens next?</strong><br>
+                • Our team will review your submitted documents<br>
+                • You'll receive an email notification within 2-3 business days<br>
+                • Upon approval, you'll gain full access to the platform<br>
+                • You can then start managing your practice and appointments
+            </div>
+            
+            <p>If you have any questions or need to update your application, please don't hesitate to contact our support team.</p>
+            
+            <p>Thank you for choosing our platform to serve your patients.</p>
+            
+            <p>Best regards,<br>
+            The Healthcare Platform Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>If you need assistance, contact us at support@healthcareplatform.com</p>
+            <p>&copy; 2024 Healthcare Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

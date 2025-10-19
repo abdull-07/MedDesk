@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Expiry Reminder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 10px;
+        }
+        .title {
+            color: #ffc107;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .appointment-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .detail-value {
+            color: #212529;
+        }
+        .countdown {
+            background-color: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+            border: 2px solid #ffc107;
+        }
+        .countdown-time {
+            font-size: 28px;
+            font-weight: bold;
+            color: #856404;
+            margin: 10px 0;
+        }
+        .actions {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 5px 10px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .button-primary {
+            background-color: #28a745;
+            color: white;
+        }
+        .button-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .urgent-info {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">HealthCare Platform</div>
+        </div>
+        
+        <h1 class="title">⚠️ Appointment Reminder</h1>
+        
+        <div class="content">
+            <p>Dear <%= recipientName %>,</p>
+            
+            <% if (recipientType === 'patient') { %>
+                <p><strong>Your appointment with Dr. <%= doctorName %> is starting soon!</strong></p>
+                <p>This is a friendly reminder that your appointment will expire if you don't join within the next few minutes.</p>
+            <% } else { %>
+                <p><strong>Your patient <%= patientName %> has an upcoming appointment that may expire soon.</strong></p>
+                <p>Please be prepared as the appointment window is about to close.</p>
+            <% } %>
+            
+            <div class="countdown">
+                <div>Time Remaining:</div>
+                <div class="countdown-time"><%= timeRemaining %></div>
+                <div>Until appointment expires</div>
+            </div>
+            
+            <div class="appointment-card">
+                <div class="appointment-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Appointment ID:</span>
+                        <span class="detail-value">#<%= appointmentId %></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Scheduled Time:</span>
+                        <span class="detail-value"><%= appointmentDate %> at <%= appointmentTime %></span>
+                    </div>
+                    <% if (recipientType === 'patient') { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Doctor:</span>
+                            <span class="detail-value">Dr. <%= doctorName %></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Specialization:</span>
+                            <span class="detail-value"><%= doctorSpecialization %></span>
+                        </div>
+                    <% } else { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Patient:</span>
+                            <span class="detail-value"><%= patientName %></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Patient Contact:</span>
+                            <span class="detail-value"><%= patientPhone %></span>
+                        </div>
+                    <% } %>
+                    <div class="detail-row">
+                        <span class="detail-label">Duration:</span>
+                        <span class="detail-value"><%= duration %> minutes</span>
+                    </div>
+                    <% if (appointmentType) { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Type:</span>
+                            <span class="detail-value"><%= appointmentType %></span>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+            
+            <% if (recipientType === 'patient') { %>
+                <div class="urgent-info">
+                    <strong>⏰ Action Required:</strong><br>
+                    • Click "Join Appointment" below to start your consultation<br>
+                    • Ensure your camera and microphone are working<br>
+                    • Have your ID and insurance information ready<br>
+                    • If you can't attend, please reschedule immediately
+                </div>
+                
+                <div class="actions">
+                    <% if (joinUrl) { %>
+                        <a href="<%= joinUrl %>" class="button button-primary">Join Appointment Now</a>
+                    <% } %>
+                    <% if (rescheduleUrl) { %>
+                        <a href="<%= rescheduleUrl %>" class="button button-secondary">Reschedule</a>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <div class="urgent-info">
+                    <strong>⏰ Preparation Checklist:</strong><br>
+                    • Review patient's medical history<br>
+                    • Prepare consultation room/setup<br>
+                    • Ensure stable internet connection<br>
+                    • Have necessary forms and documents ready
+                </div>
+                
+                <div class="actions">
+                    <% if (joinUrl) { %>
+                        <a href="<%= joinUrl %>" class="button button-primary">Join Appointment</a>
+                    <% } %>
+                </div>
+            <% } %>
+            
+            <div class="urgent-info">
+                <strong>Important:</strong> Appointments automatically expire 15 minutes after the scheduled time if not attended. This helps maintain schedule efficiency for all users.
+            </div>
+            
+            <p>If you're experiencing technical difficulties, please contact our support team immediately at (555) 123-4567.</p>
+            
+            <p>Thank you for using our healthcare platform.</p>
+            
+            <p>Best regards,<br>
+            The Healthcare Platform Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated reminder. Please take action promptly.</p>
+            <p>Need immediate help? Contact us at support@healthcareplatform.com or call (555) 123-4567</p>
+            <p>&copy; 2024 Healthcare Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
