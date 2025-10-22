@@ -20,9 +20,17 @@ const DoctorSignUp = () => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+    let processedValue = value;
+
+    // Convert numeric fields to numbers
+    if (name === 'experience' || name === 'consultationFee') {
+      processedValue = value === '' ? '' : Number(value);
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: processedValue
     });
   };
 
@@ -32,9 +40,31 @@ const DoctorSignUp = () => {
     setLoading(true);
 
     try {
-      // Since the backend API doesn't exist yet, simulate successful registration
+      // Validate form data before sending
+      if (!formData.name || !formData.email || !formData.password ||
+        !formData.specialization || !formData.qualifications ||
+        !formData.clinicName || !formData.experience || !formData.licenseNumber) {
+        setError('Please fill in all required fields');
+        return;
+      }
+
+      if (formData.consultationFee < 500 || formData.consultationFee > 5000) {
+        setError('Consultation fee must be between 500 and 5000 PKR');
+        return;
+      }
+
+      // Try to connect to the backend API
       try {
-        const response = await fetch('http://localhost:5000/api/auth/doctor/register', {
+        let baseUrl;
+        if (import.meta.env.PROD) {
+          baseUrl = 'https://meddesk-l85w.onrender.com/api';
+        }
+        // Default to localhost for development
+        else {
+          baseUrl = 'http://localhost:5000/api';
+        }
+        console.log('Sending registration data:', formData);
+        const response = await fetch(`${baseUrl}/auth/doctor/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -43,8 +73,10 @@ const DoctorSignUp = () => {
         });
 
         const data = await response.json();
+        console.log('Server response:', data);
 
         if (!response.ok) {
+          console.error('Registration failed:', data);
           throw new Error(data.message || 'Registration failed');
         }
 
@@ -66,7 +98,7 @@ const DoctorSignUp = () => {
         };
 
         localStorage.setItem('pendingUser', JSON.stringify(pendingUser));
-        
+
         // Clear any existing auth data
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -74,8 +106,8 @@ const DoctorSignUp = () => {
         // Redirect to verification pending page
         navigate('/verification-pending');
       } catch (apiError) {
-        console.log('API not available, simulating successful registration');
-        
+        console.log('API connection failed, falling back to simulation mode');
+
         // Simulate successful registration with dummy data
         const pendingUser = {
           id: `doc-pending-${Date.now()}`,
@@ -94,7 +126,7 @@ const DoctorSignUp = () => {
         };
 
         localStorage.setItem('pendingUser', JSON.stringify(pendingUser));
-        
+
         // Clear any existing auth data
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -282,7 +314,7 @@ const DoctorSignUp = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="consultationFee" className="block text-sm font-medium text-gray-700">
                 Consultation Fee (PKR)
@@ -292,7 +324,8 @@ const DoctorSignUp = () => {
                   id="consultationFee"
                   name="consultationFee"
                   type="number"
-                  min="0"
+                  min="500"
+                  max="5000"
                   value={formData.consultationFee}
                   onChange={handleChange}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#1D3557] focus:border-[#1D3557] sm:text-sm"
