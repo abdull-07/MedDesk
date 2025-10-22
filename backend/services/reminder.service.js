@@ -1,6 +1,7 @@
 import Appointment from '../models/appointment.model.js';
 import User from '../models/user.model.js';
 import NotificationService from './notification.service.js';
+import EmailService from '../emails/emailService.js';
 
 class ReminderService {
   // Send reminders for appointments in the next 24 hours
@@ -39,6 +40,13 @@ class ReminderService {
           appointmentType: appointment.type
         });
 
+        // Send email reminder to patient
+        const patientEmailData = EmailService.formatAppointmentData(appointment, appointment.patient, 'patient');
+        await EmailService.sendAppointmentReminder({
+          ...patientEmailData,
+          reminderTime: 'tomorrow'
+        });
+
         // Send reminder to doctor
         await NotificationService.createNotification({
           recipient: appointment.doctor._id,
@@ -54,6 +62,13 @@ class ReminderService {
           date,
           time,
           appointmentType: appointment.type
+        });
+
+        // Send email reminder to doctor
+        const doctorEmailData = EmailService.formatAppointmentData(appointment, appointment.doctor, 'doctor');
+        await EmailService.sendAppointmentReminder({
+          ...doctorEmailData,
+          reminderTime: 'tomorrow'
         });
       }
 
@@ -99,6 +114,13 @@ class ReminderService {
           appointmentType: appointment.type
         });
 
+        // Send urgent email reminder to patient
+        const patientEmailData = EmailService.formatAppointmentData(appointment, appointment.patient, 'patient');
+        await EmailService.sendAppointmentExpiryReminder({
+          ...patientEmailData,
+          expiryTime: appointment.startTime
+        });
+
         // Send reminder to doctor
         await NotificationService.createNotification({
           recipient: appointment.doctor._id,
@@ -114,6 +136,13 @@ class ReminderService {
           date,
           time,
           appointmentType: appointment.type
+        });
+
+        // Send urgent email reminder to doctor
+        const doctorEmailData = EmailService.formatAppointmentData(appointment, appointment.doctor, 'doctor');
+        await EmailService.sendAppointmentExpiryReminder({
+          ...doctorEmailData,
+          expiryTime: appointment.startTime
         });
       }
 
