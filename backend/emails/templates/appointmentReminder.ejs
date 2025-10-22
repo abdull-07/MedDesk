@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Appointment Cancelled</title>
+    <title>Appointment Reminder</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -31,7 +31,7 @@
             margin-bottom: 10px;
         }
         .title {
-            color: #dc3545;
+            color: #2c5aa0;
             font-size: 24px;
             margin-bottom: 20px;
             text-align: center;
@@ -43,7 +43,7 @@
             background-color: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid #2c5aa0;
             margin: 20px 0;
         }
         .detail-row {
@@ -62,14 +62,13 @@
         .detail-value {
             color: #212529;
         }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            background-color: #dc3545;
-            color: white;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
+        .reminder-info {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #2c5aa0;
+            margin: 20px 0;
+            text-align: center;
         }
         .actions {
             text-align: center;
@@ -88,11 +87,15 @@
             background-color: #2c5aa0;
             color: white;
         }
+        .button-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
         .important-info {
-            background-color: #f8d7da;
+            background-color: #fff3cd;
             padding: 15px;
             border-radius: 5px;
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid #ffc107;
             margin: 20px 0;
         }
         .footer {
@@ -111,16 +114,20 @@
             <div class="logo">HealthCare Platform</div>
         </div>
         
-        <h1 class="title">✗ Appointment Cancelled</h1>
+        <h1 class="title">📅 Appointment Reminder</h1>
         
         <div class="content">
             <p>Dear <%= recipientName %>,</p>
             
             <% if (recipientType === 'patient') { %>
-                <p>We regret to inform you that your appointment with Dr. <%= doctorName %> has been cancelled.</p>
+                <p>This is a friendly reminder about your upcoming appointment with Dr. <%= doctorName %>.</p>
             <% } else { %>
-                <p>This is to notify you that the appointment with patient <%= patientName %> has been cancelled.</p>
+                <p>This is a reminder about your upcoming appointment with patient <%= patientName %>.</p>
             <% } %>
+            
+            <div class="reminder-info">
+                <h3 style="margin: 0; color: #2c5aa0;">Your appointment is <%= reminderTime %></h3>
+            </div>
             
             <div class="appointment-card">
                 <div class="appointment-details">
@@ -129,64 +136,88 @@
                         <span class="detail-value">#<%= appointmentId %></span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-label">Original Date & Time:</span>
+                        <span class="detail-label">Date & Time:</span>
                         <span class="detail-value"><%= appointmentDate %> at <%= appointmentTime %></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Duration:</span>
+                        <span class="detail-value"><%= duration %> minutes</span>
                     </div>
                     <% if (recipientType === 'patient') { %>
                         <div class="detail-row">
                             <span class="detail-label">Doctor:</span>
                             <span class="detail-value">Dr. <%= doctorName %></span>
                         </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Specialization:</span>
+                            <span class="detail-value"><%= doctorSpecialization %></span>
+                        </div>
                     <% } else { %>
                         <div class="detail-row">
                             <span class="detail-label">Patient:</span>
                             <span class="detail-value"><%= patientName %></span>
                         </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Patient Contact:</span>
+                            <span class="detail-value"><%= patientPhone %></span>
+                        </div>
                     <% } %>
-                    <div class="detail-row">
-                        <span class="detail-label">Cancelled By:</span>
-                        <span class="detail-value"><%= cancelledBy %></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Cancellation Date:</span>
-                        <span class="detail-value"><%= cancellationDate %></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Status:</span>
-                        <span class="detail-value"><span class="status-badge">Cancelled</span></span>
-                    </div>
+                    <% if (appointmentType) { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Type:</span>
+                            <span class="detail-value"><%= appointmentType %></span>
+                        </div>
+                    <% } %>
+                    <% if (location) { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Location:</span>
+                            <span class="detail-value"><%= location %></span>
+                        </div>
+                    <% } %>
                 </div>
             </div>
             
-            <% if (cancellationReason) { %>
-                <div class="important-info">
-                    <strong>Reason for Cancellation:</strong><br>
-                    <%= cancellationReason %>
-                </div>
-            <% } %>
-            
             <% if (recipientType === 'patient') { %>
-                <p>We apologize for any inconvenience this may cause. You can reschedule your appointment at your convenience using the link below.</p>
-                
-                <div class="actions">
-                    <% if (rescheduleUrl) { %>
-                        <a href="<%= rescheduleUrl %>" class="button button-primary">Schedule New Appointment</a>
-                    <% } %>
+                <div class="important-info">
+                    <strong>Preparation Checklist:</strong><br>
+                    • Arrive 15 minutes early for check-in<br>
+                    • Bring a valid ID and insurance card<br>
+                    • Prepare any questions you want to ask<br>
+                    • Bring current medications list<br>
+                    • Have any relevant medical records ready
                 </div>
             <% } else { %>
-                <p>Please update your schedule accordingly. If you need to reach out to the patient, their contact information is available in your dashboard.</p>
+                <div class="important-info">
+                    <strong>Preparation Reminders:</strong><br>
+                    • Review patient's medical history<br>
+                    • Prepare consultation materials<br>
+                    • Ensure equipment is ready<br>
+                    • Check for any pre-appointment notes<br>
+                    • Verify appointment details
+                </div>
             <% } %>
             
-            <p>If you have any questions or concerns, please don't hesitate to contact our support team.</p>
+            <div class="actions">
+                <% if (dashboardUrl) { %>
+                    <a href="<%= dashboardUrl %>" class="button button-primary">View Dashboard</a>
+                <% } %>
+                <% if (rescheduleUrl) { %>
+                    <a href="<%= rescheduleUrl %>" class="button button-secondary">Reschedule</a>
+                <% } %>
+            </div>
+            
+            <p>If you need to reschedule or have any questions, please contact us as soon as possible.</p>
+            
+            <p>We look forward to seeing you at your appointment!</p>
             
             <p>Best regards,<br>
-            The MedDesk Team</p>
+            The Healthcare Platform Team</p>
         </div>
         
         <div class="footer">
-            <p>This is an automated notification. Please save this email for your records.</p>
+            <p>This is an automated reminder. Please save this email for your records.</p>
             <p>Need help? Contact us at support@healthcareplatform.com or call (555) 123-4567</p>
-            <p>&copy; 2025 MedDesk. All rights reserved.</p>
+            <p>&copy; 2024 Healthcare Platform. All rights reserved.</p>
         </div>
     </div>
 </body>
