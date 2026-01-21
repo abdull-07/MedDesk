@@ -1,4 +1,4 @@
-# MedDesk
+# MedDesk 💻
 
 
 MedDesk is a full-stack doctor appointment booking web application designed to connect patients with doctors efficiently. It supports role-based access for Admin, Doctors, and Patients, and provides seamless user experience through features like profile management, doctor availability scheduling, and appointment tracking.
@@ -180,7 +180,7 @@ The frontend will be available at [http://localhost:5173](http://localhost:3000)
 
 * Email & SMS notifications
 * Admin reporting dashboard (appointments, revenue, etc.)
-* Doctor verification system
+* Doctor verification system ✅
 
 ---
 
@@ -194,3 +194,9 @@ Feel free to fork this repo and submit a pull request.
 ## 📄 License
 
 This project is licensed under the MIT License.
+
+## Live Demo
+https://med-desk-one.vercel.app/
+
+## Mobile APP
+https://github.com/abdull-07/MedDesk-Mobile-APP
